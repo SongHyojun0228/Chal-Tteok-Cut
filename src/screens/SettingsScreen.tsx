@@ -101,8 +101,8 @@ export default function SettingsScreen() {
         <View style={styles.sectionCard}>
           <SettingItem
             emoji="👤"
-            title={user?.email || '알 수 없는 사용자'}
-            subtitle="이메일로 로그인됨"
+            title={user?.displayName || '사용자'}
+            subtitle={user?.email || ''}
           />
         </View>
       </View>
