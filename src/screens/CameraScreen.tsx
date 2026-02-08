@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Image,
+  Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '../constants/colors';
 import { ProfileFlowParamList } from '../types';
@@ -17,9 +20,46 @@ type Props = {
 };
 
 export default function CameraScreen({ navigation }: Props) {
-  const handleCapture = () => {
-    // TODO: 실제 카메라 촬영 연동
-    // 지금은 바로 질문 화면으로 이동
+  const [photo, setPhoto] = useState<string | null>(null);
+
+  const takePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('권한 필요', '카메라 권한을 허용해주세요');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setPhoto(result.assets[0].uri);
+    }
+  };
+
+  const pickFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('권한 필요', '갤러리 접근 권한을 허용해주세요');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setPhoto(result.assets[0].uri);
+    }
+  };
+
+  const handleNext = () => {
+    // TODO: 사진을 Firebase Storage에 업로드
     navigation.navigate('Questions');
   };
 
@@ -34,13 +74,16 @@ export default function CameraScreen({ navigation }: Props) {
         </Text>
       </View>
 
-      {/* 카메라 프리뷰 영역 (placeholder) */}
-      <View style={styles.cameraArea}>
-        {/* 얼굴 가이드라인 오버레이 */}
-        <View style={styles.faceGuide}>
-          <Text style={styles.guideEmoji}>🧑</Text>
-          <Text style={styles.guideText}>여기에 얼굴을 맞춰주세요</Text>
-        </View>
+      {/* 사진 영역 */}
+      <View style={styles.photoArea}>
+        {photo ? (
+          <Image source={{ uri: photo }} style={styles.preview} />
+        ) : (
+          <View style={styles.faceGuide}>
+            <Text style={styles.guideEmoji}>🧑</Text>
+            <Text style={styles.guideText}>여기에 얼굴을 맞춰주세요</Text>
+          </View>
+        )}
       </View>
 
       {/* 촬영 팁 */}
@@ -52,10 +95,34 @@ export default function CameraScreen({ navigation }: Props) {
 
       {/* 하단 버튼 */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
-          <View style={styles.captureInner} />
-        </TouchableOpacity>
-        <Text style={styles.captureLabel}>촬영</Text>
+        {photo ? (
+          // 사진 있음 → 다음 or 재촬영
+          <View style={styles.photoActions}>
+            <TouchableOpacity style={styles.retakeButton} onPress={() => setPhoto(null)}>
+              <Text style={styles.retakeText}>다시 찍기</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+              <Text style={styles.nextText}>다음으로</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          // 사진 없음 → 촬영/갤러리
+          <View style={styles.captureActions}>
+            <TouchableOpacity style={styles.galleryButton} onPress={pickFromGallery}>
+              <Text style={styles.galleryEmoji}>🖼️</Text>
+              <Text style={styles.galleryText}>갤러리</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
+              <View style={styles.captureInner} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.skipButton} onPress={handleNext}>
+              <Text style={styles.skipEmoji}>⏭️</Text>
+              <Text style={styles.skipText}>건너뛰기</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -64,13 +131,12 @@ export default function CameraScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: Colors.background,
   },
   header: {
     paddingTop: 60,
     paddingHorizontal: 24,
     paddingBottom: 16,
-    backgroundColor: Colors.background,
   },
   step: {
     fontSize: 13,
@@ -89,16 +155,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
   },
-  cameraArea: {
+  photoArea: {
     flex: 1,
+    marginHorizontal: 24,
+    borderRadius: 24,
+    overflow: 'hidden',
     backgroundColor: '#1a1a2e',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  preview: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
   faceGuide: {
-    width: width * 0.6,
-    height: width * 0.8,
-    borderRadius: width * 0.3,
+    width: width * 0.5,
+    height: width * 0.65,
+    borderRadius: width * 0.25,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.4)',
     borderStyle: 'dashed',
@@ -114,7 +188,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   tips: {
-    backgroundColor: Colors.background,
     paddingVertical: 12,
     paddingHorizontal: 24,
     gap: 4,
@@ -124,10 +197,26 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   footer: {
-    backgroundColor: Colors.background,
-    alignItems: 'center',
+    paddingHorizontal: 24,
     paddingBottom: 48,
-    paddingTop: 12,
+    paddingTop: 8,
+  },
+  captureActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  galleryButton: {
+    alignItems: 'center',
+    width: 64,
+  },
+  galleryEmoji: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  galleryText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
   captureButton: {
     width: 72,
@@ -144,9 +233,45 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     backgroundColor: Colors.primary,
   },
-  captureLabel: {
-    marginTop: 8,
-    fontSize: 13,
+  skipButton: {
+    alignItems: 'center',
+    width: 64,
+  },
+  skipEmoji: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  skipText: {
+    fontSize: 12,
     color: Colors.textSecondary,
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  retakeButton: {
+    flex: 1,
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.border,
+  },
+  retakeText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  nextButton: {
+    flex: 2,
+    backgroundColor: Colors.primary,
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  nextText: {
+    color: Colors.white,
+    fontSize: 17,
+    fontWeight: '700',
   },
 });

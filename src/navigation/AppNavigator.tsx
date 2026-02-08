@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { Text } from 'react-native';
 import { Colors } from '../constants/colors';
 import { RootStackParamList, ProfileFlowParamList, MainTabParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { hasProfile } from '../services/userService';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -90,9 +91,18 @@ function MainTabs() {
 // 루트 네비게이터
 export default function AppNavigator() {
   const { user, loading } = useAuth();
+  const [profileExists, setProfileExists] = useState<boolean | null>(null);
 
-  // Firebase 로딩 중
-  if (loading) {
+  useEffect(() => {
+    if (user) {
+      hasProfile(user.uid).then(setProfileExists);
+    } else {
+      setProfileExists(null);
+    }
+  }, [user]);
+
+  // Firebase 로딩 중 or 프로필 체크 중
+  if (loading || (user && profileExists === null)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>
         <Text style={{ fontSize: 48, marginBottom: 16 }}>✂️</Text>
@@ -104,8 +114,28 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
-          // 로그인 됨
+        {!user ? (
+          // 비로그인
+          <Stack.Screen name="Login" component={LoginScreen} />
+        ) : profileExists ? (
+          // 로그인 + 프로필 있음 → 바로 메인
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="ProfileFlow" component={ProfileFlow} />
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen
+              name="StyleDetail"
+              component={StyleDetailScreen}
+              options={{
+                presentation: 'modal',
+                headerShown: true,
+                headerTitle: '스타일 상세',
+                headerTintColor: Colors.textPrimary,
+              }}
+            />
+          </>
+        ) : (
+          // 로그인 + 프로필 없음 → 온보딩부터
           <>
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="ProfileFlow" component={ProfileFlow} />
@@ -121,9 +151,6 @@ export default function AppNavigator() {
               }}
             />
           </>
-        ) : (
-          // 비로그인
-          <Stack.Screen name="Login" component={LoginScreen} />
         )}
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,28 +1,70 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '../constants/colors';
 import { RootStackParamList } from '../types';
-import { mockStyles } from '../constants/mockStyles';
+import { mockStyles, StyleData } from '../constants/mockStyles';
 import StyleCard from '../components/StyleCard';
+import { useAuth } from '../contexts/AuthContext';
+import { getUserProfile } from '../services/userService';
 
 export default function ResultScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user } = useAuth();
+  const [filteredStyles, setFilteredStyles] = useState<StyleData[]>(mockStyles);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        setLoading(true);
+        getUserProfile(user.uid).then((profile) => {
+          setUserName(user.displayName || '');
+
+          if (profile) {
+            // 성별에 맞는 스타일 필터링
+            const gender = profile.gender;
+            const filtered = mockStyles.filter(
+              (s) => s.gender === 'unisex' || s.gender === gender
+            );
+            setFilteredStyles(filtered);
+          } else {
+            setFilteredStyles(mockStyles);
+          }
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
+    }, [user])
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>찰떡같이 어울리는</Text>
+        <Text style={styles.greeting}>
+          {userName ? `${userName}님을 위한` : '찰떡같이 어울리는'}
+        </Text>
         <Text style={styles.title}>맞춤 스타일 추천 ✂️</Text>
         <Text style={styles.subtitle}>
-          AI가 분석한 Top {mockStyles.length} 스타일이에요
+          AI가 분석한 Top {filteredStyles.length} 스타일이에요
         </Text>
       </View>
 
@@ -32,13 +74,10 @@ export default function ResultScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
-        {mockStyles.map((item, index) => (
+        {filteredStyles.map((item, index) => (
           <View key={item.id}>
-            {/* 순위 표시 */}
             <View style={styles.rankBadge}>
-              <Text style={styles.rankText}>
-                {index + 1}위
-              </Text>
+              <Text style={styles.rankText}>{index + 1}위</Text>
             </View>
             <StyleCard
               style={item}
@@ -58,6 +97,12 @@ export default function ResultScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
