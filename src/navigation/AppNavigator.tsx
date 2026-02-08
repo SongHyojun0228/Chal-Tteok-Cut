@@ -4,17 +4,36 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
 import { Colors } from '../constants/colors';
-import { RootStackParamList, MainTabParamList } from '../types';
+import { RootStackParamList, ProfileFlowParamList, MainTabParamList } from '../types';
 
 // Screens
 import OnboardingScreen from '../screens/OnboardingScreen';
+import CameraScreen from '../screens/CameraScreen';
+import QuestionsScreen from '../screens/QuestionsScreen';
+import AnalyzingScreen from '../screens/AnalyzingScreen';
 import ResultScreen from '../screens/ResultScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import StyleDetailScreen from '../screens/StyleDetailScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileFlowParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+// 프로필 생성 플로우
+function ProfileFlow() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="Camera" component={CameraScreen} />
+      <ProfileStack.Screen name="Questions" component={QuestionsScreen} />
+      <ProfileStack.Screen
+        name="Analyzing"
+        component={AnalyzingScreen}
+        options={{ gestureEnabled: false }}
+      />
+    </ProfileStack.Navigator>
+  );
+}
 
 // 하단 탭 네비게이터
 function MainTabs() {
@@ -42,7 +61,7 @@ function MainTabs() {
         component={ResultScreen}
         options={{
           tabBarLabel: '추천',
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: () => (
             <Text style={{ fontSize: 24 }}>✂️</Text>
           ),
         }}
@@ -52,7 +71,7 @@ function MainTabs() {
         component={ProfileScreen}
         options={{
           tabBarLabel: '프로필',
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: () => (
             <Text style={{ fontSize: 24 }}>👤</Text>
           ),
         }}
@@ -62,7 +81,7 @@ function MainTabs() {
         component={SettingsScreen}
         options={{
           tabBarLabel: '설정',
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: () => (
             <Text style={{ fontSize: 24 }}>⚙️</Text>
           ),
         }}
@@ -81,6 +100,7 @@ export default function AppNavigator() {
         }}
       >
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        <Stack.Screen name="ProfileFlow" component={ProfileFlow} />
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen
           name="StyleDetail"

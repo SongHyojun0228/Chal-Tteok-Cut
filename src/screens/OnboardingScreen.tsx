@@ -53,12 +53,12 @@ export default function OnboardingScreen({ navigation }: Props) {
     if (currentIndex < slides.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
-      navigation.replace('MainTabs');
+      navigation.replace('ProfileFlow');
     }
   };
 
   const handleSkip = () => {
-    navigation.replace('MainTabs');
+    navigation.replace('ProfileFlow');
   };
 
   return (
