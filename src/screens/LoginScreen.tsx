@@ -9,24 +9,54 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
 } from 'react-native';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  updateProfile,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Colors } from '../constants/colors';
 
+function validatePassword(password: string): string | null {
+  if (password.length < 8) return '비밀번호는 8자 이상이어야 해요';
+  if (!/[A-Za-z]/.test(password)) return '영문자를 포함해야 해요';
+  if (!/[0-9]/.test(password)) return '숫자를 포함해야 해요';
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password))
+    return '특수문자를 포함해야 해요 (!@#$% 등)';
+  return null;
+}
+
 export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // 성공 모달
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [successName, setSuccessName] = useState('');
+
   const handleSubmit = async () => {
+    // 회원가입 시 이름 필수
+    if (isSignUp && !name.trim()) {
+      Alert.alert('알림', '이름을 입력해주세요');
+      return;
+    }
+
     if (!email || !password) {
       Alert.alert('알림', '이메일과 비밀번호를 입력해주세요');
+      return;
+    }
+
+    // 비밀번호 유효성 검사
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      Alert.alert('비밀번호 조건', passwordError);
       return;
     }
 
@@ -35,19 +65,20 @@ export default function LoginScreen() {
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert('알림', '비밀번호는 6자 이상이어야 해요');
-      return;
-    }
-
     setLoading(true);
     try {
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Firebase에 이름 저장
+        await updateProfile(userCredential.user, { displayName: name.trim() });
+        setSuccessName(name.trim());
+        setSuccessMessage('회원가입 완료!');
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        setSuccessName(userCredential.user.displayName || '');
+        setSuccessMessage('로그인 성공!');
       }
-      // 성공하면 AuthContext가 자동으로 감지 → 화면 전환
+      setShowSuccessModal(true);
     } catch (error: any) {
       let message = '오류가 발생했어요. 다시 시도해주세요.';
       if (error.code === 'auth/email-already-in-use') {
@@ -87,6 +118,18 @@ export default function LoginScreen() {
             {isSignUp ? '회원가입' : '로그인'}
           </Text>
 
+          {/* 이름 (회원가입 시만) */}
+          {isSignUp && (
+            <TextInput
+              style={styles.input}
+              placeholder="이름"
+              placeholderTextColor={Colors.textLight}
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+            />
+          )}
+
           <TextInput
             style={styles.input}
             placeholder="이메일"
@@ -105,6 +148,16 @@ export default function LoginScreen() {
             onChangeText={setPassword}
             secureTextEntry
           />
+
+          {/* 비밀번호 조건 안내 */}
+          {isSignUp && (
+            <View style={styles.passwordRules}>
+              <PasswordRule label="8자 이상" met={password.length >= 8} />
+              <PasswordRule label="영문 포함" met={/[A-Za-z]/.test(password)} />
+              <PasswordRule label="숫자 포함" met={/[0-9]/.test(password)} />
+              <PasswordRule label="특수문자 포함" met={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)} />
+            </View>
+          )}
 
           {isSignUp && (
             <TextInput
@@ -133,6 +186,7 @@ export default function LoginScreen() {
             onPress={() => {
               setIsSignUp(!isSignUp);
               setConfirmPassword('');
+              setName('');
             }}
           >
             <Text style={styles.switchText}>
@@ -143,7 +197,44 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* 성공 모달 */}
+      <Modal visible={showSuccessModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalEmoji}>🎉</Text>
+            <Text style={styles.modalTitle}>{successMessage}</Text>
+            <Text style={styles.modalSubtext}>
+              {successName
+                ? `${successName}님, 환영해요!`
+                : '찰떡컷에 오신 걸 환영해요!'}
+            </Text>
+            <Text style={styles.modalDesc}>
+              이제 나에게 딱 맞는 스타일을 찾아볼까요?
+            </Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setShowSuccessModal(false)}
+            >
+              <Text style={styles.modalButtonText}>시작하기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
+  );
+}
+
+function PasswordRule({ label, met }: { label: string; met: boolean }) {
+  return (
+    <View style={styles.ruleRow}>
+      <Text style={[styles.ruleIcon, met && styles.ruleIconMet]}>
+        {met ? '✓' : '○'}
+      </Text>
+      <Text style={[styles.ruleText, met && styles.ruleTextMet]}>
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -204,6 +295,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  passwordRules: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  ruleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  ruleIcon: {
+    fontSize: 12,
+    color: Colors.textLight,
+    marginRight: 4,
+  },
+  ruleIconMet: {
+    color: Colors.success,
+  },
+  ruleText: {
+    fontSize: 12,
+    color: Colors.textLight,
+  },
+  ruleTextMet: {
+    color: Colors.success,
+  },
   submitButton: {
     backgroundColor: Colors.primary,
     paddingVertical: 18,
@@ -227,5 +345,55 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.primary,
     fontWeight: '600',
+  },
+  // 성공 모달
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  modalCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 28,
+    padding: 36,
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    marginBottom: 8,
+  },
+  modalSubtext: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginBottom: 8,
+  },
+  modalDesc: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  modalButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 14,
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: Colors.white,
+    fontSize: 17,
+    fontWeight: '700',
   },
 });
