@@ -1,0 +1,28 @@
+// 네비게이션 타입 정의
+export type RootStackParamList = {
+  Onboarding: undefined;
+  ProfileFlow: undefined;
+  MainTabs: undefined;
+  StyleDetail: { styleId: string };
+};
+
+export type ProfileFlowParamList = {
+  Camera: undefined;
+  Questions: undefined;
+  Analyzing: undefined;
+};
+
+export type MainTabParamList = {
+  Result: undefined;
+  Profile: undefined;
+  Settings: undefined;
+};
+
+// 얼굴형 타입
+export type FaceShape = 'round' | 'oval' | 'square' | 'oblong' | 'heart';
+
+// 모질 타입
+export type HairType = 'straight' | 'wavy' | 'curly';
+
+// 모량 타입
+export type HairAmount = 'thin' | 'medium' | 'thick';
