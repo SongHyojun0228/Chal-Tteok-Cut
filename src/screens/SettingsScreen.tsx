@@ -8,6 +8,9 @@ import {
   Switch,
   Alert,
 } from 'react-native';
+import { signOut } from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { Colors } from '../constants/colors';
 
 type SettingItemProps = {
@@ -37,8 +40,20 @@ function SettingItem({ emoji, title, subtitle, onPress, rightElement, danger }: 
 }
 
 export default function SettingsScreen() {
+  const { user } = useAuth();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [marketingEnabled, setMarketingEnabled] = useState(false);
+
+  const handleLogout = () => {
+    Alert.alert('로그아웃', '정말 로그아웃 하시겠어요?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그아웃',
+        style: 'destructive',
+        onPress: () => signOut(auth),
+      },
+    ]);
+  };
 
   const handleReanalyze = () => {
     Alert.alert(
@@ -86,9 +101,8 @@ export default function SettingsScreen() {
         <View style={styles.sectionCard}>
           <SettingItem
             emoji="👤"
-            title="로그인 / 회원가입"
-            subtitle="데이터를 안전하게 보관하세요"
-            onPress={() => Alert.alert('준비 중', '곧 로그인 기능이 추가될 예정이에요!')}
+            title={user?.email || '알 수 없는 사용자'}
+            subtitle="이메일로 로그인됨"
           />
         </View>
       </View>
@@ -200,7 +214,7 @@ export default function SettingsScreen() {
           <SettingItem
             emoji="🚪"
             title="로그아웃"
-            onPress={() => Alert.alert('로그아웃', '로그인 후 사용 가능합니다')}
+            onPress={handleLogout}
           />
           <View style={styles.divider} />
           <SettingItem

@@ -1,12 +1,15 @@
 import React from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
 import { Colors } from '../constants/colors';
 import { RootStackParamList, ProfileFlowParamList, MainTabParamList } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 // Screens
+import LoginScreen from '../screens/LoginScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import CameraScreen from '../screens/CameraScreen';
 import QuestionsScreen from '../screens/QuestionsScreen';
@@ -61,9 +64,7 @@ function MainTabs() {
         component={ResultScreen}
         options={{
           tabBarLabel: '추천',
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 24 }}>✂️</Text>
-          ),
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>✂️</Text>,
         }}
       />
       <Tab.Screen
@@ -71,9 +72,7 @@ function MainTabs() {
         component={ProfileScreen}
         options={{
           tabBarLabel: '프로필',
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 24 }}>👤</Text>
-          ),
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
         }}
       />
       <Tab.Screen
@@ -81,9 +80,7 @@ function MainTabs() {
         component={SettingsScreen}
         options={{
           tabBarLabel: '설정',
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 24 }}>⚙️</Text>
-          ),
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>⚙️</Text>,
         }}
       />
     </Tab.Navigator>
@@ -92,26 +89,42 @@ function MainTabs() {
 
 // 루트 네비게이터
 export default function AppNavigator() {
+  const { user, loading } = useAuth();
+
+  // Firebase 로딩 중
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>
+        <Text style={{ fontSize: 48, marginBottom: 16 }}>✂️</Text>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        <Stack.Screen name="ProfileFlow" component={ProfileFlow} />
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen
-          name="StyleDetail"
-          component={StyleDetailScreen}
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            headerTitle: '스타일 상세',
-            headerTintColor: Colors.textPrimary,
-          }}
-        />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {user ? (
+          // 로그인 됨
+          <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="ProfileFlow" component={ProfileFlow} />
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen
+              name="StyleDetail"
+              component={StyleDetailScreen}
+              options={{
+                presentation: 'modal',
+                headerShown: true,
+                headerTitle: '스타일 상세',
+                headerTintColor: Colors.textPrimary,
+              }}
+            />
+          </>
+        ) : (
+          // 비로그인
+          <Stack.Screen name="Login" component={LoginScreen} />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
