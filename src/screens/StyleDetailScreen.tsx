@@ -1,19 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import { RootStackParamList } from '../types';
 import { mockStyles } from '../constants/mockStyles';
+import { useAuth } from '../contexts/AuthContext';
+import { toggleSavedStyle, getUserProfile } from '../services/userService';
 
 export default function StyleDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'StyleDetail'>>();
+  const { user } = useAuth();
   const item = mockStyles.find((s) => s.id === route.params.styleId);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    // 현재 저장 상태 확인
+    if (user && item) {
+      getUserProfile(user.uid).then((profile) => {
+        if (profile?.savedStyles?.includes(item.id)) {
+          setIsSaved(true);
+        }
+      });
+    }
+  }, [user, item]);
+
+  const handleSave = async () => {
+    if (!user || !item) return;
+    setSaving(true);
+    try {
+      const saved = await toggleSavedStyle(user.uid, item.id);
+      setIsSaved(saved);
+      Alert.alert(
+        saved ? '저장 완료' : '저장 해제',
+        saved ? '프로필에서 확인할 수 있어요!' : '저장 목록에서 제거했어요'
+      );
+    } catch {
+      Alert.alert('오류', '저장에 실패했어요. 다시 시도해주세요.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!item) {
     return (
@@ -95,10 +129,19 @@ export default function StyleDetailScreen() {
 
       {/* 하단 버튼 */}
       <View style={styles.buttons}>
-        <TouchableOpacity style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>❤️ 이 스타일 저장</Text>
+        <TouchableOpacity
+          style={[styles.saveButton, isSaved && styles.saveButtonSaved]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
+            {saving ? '저장 중...' : isSaved ? '💔 저장 해제' : '❤️ 이 스타일 저장'}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.shareButton}>
+        <TouchableOpacity
+          style={styles.shareButton}
+          onPress={() => Alert.alert('공유', 'QR 코드 공유 기능은 곧 추가될 예정이에요!')}
+        >
           <Text style={styles.shareButtonText}>📤 미용사와 공유</Text>
         </TouchableOpacity>
       </View>
@@ -257,10 +300,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
   },
+  saveButtonSaved: {
+    backgroundColor: Colors.white,
+    borderWidth: 2,
+    borderColor: Colors.textLight,
+  },
   saveButtonText: {
     color: Colors.white,
     fontSize: 17,
     fontWeight: '700',
+  },
+  saveButtonTextSaved: {
+    color: Colors.textSecondary,
   },
   shareButton: {
     backgroundColor: Colors.white,

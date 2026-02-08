@@ -5,10 +5,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '../constants/colors';
 import { ProfileFlowParamList } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { saveUserProfile } from '../services/userService';
 
 type Props = {
   navigation: NativeStackNavigationProp<ProfileFlowParamList, 'Questions'>;
@@ -118,6 +121,7 @@ const lastQuestions: Question[] = [
 ];
 
 export default function QuestionsScreen({ navigation }: Props) {
+  const { user } = useAuth();
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
@@ -133,30 +137,33 @@ export default function QuestionsScreen({ navigation }: Props) {
   const progress = (currentQ + 1) / totalQuestions;
   const showSkip = question.skipable !== false;
 
+  const goNextOrFinish = async (newAnswers: Record<string, string>) => {
+    if (currentQ < totalQuestions - 1) {
+      setCurrentQ(currentQ + 1);
+    } else {
+      // 마지막 질문 → Firestore에 저장 후 분석 화면으로
+      if (user) {
+        try {
+          await saveUserProfile(user.uid, newAnswers);
+        } catch (error) {
+          Alert.alert('저장 오류', '데이터 저장에 실패했어요. 다시 시도해주세요.');
+          return;
+        }
+      }
+      navigation.navigate('Analyzing');
+    }
+  };
+
   const handleSelect = (value: string) => {
     const newAnswers = { ...answers, [question.id]: value };
     setAnswers(newAnswers);
-
-    setTimeout(() => {
-      if (currentQ < totalQuestions - 1) {
-        setCurrentQ(currentQ + 1);
-      } else {
-        navigation.navigate('Analyzing');
-      }
-    }, 300);
+    setTimeout(() => goNextOrFinish(newAnswers), 300);
   };
 
   const handleSkip = () => {
     const newAnswers = { ...answers, [question.id]: 'unknown' };
     setAnswers(newAnswers);
-
-    setTimeout(() => {
-      if (currentQ < totalQuestions - 1) {
-        setCurrentQ(currentQ + 1);
-      } else {
-        navigation.navigate('Analyzing');
-      }
-    }, 300);
+    setTimeout(() => goNextOrFinish(newAnswers), 300);
   };
 
   const handleBack = () => {
