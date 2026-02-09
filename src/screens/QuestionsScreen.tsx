@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import { ProfileFlowParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -122,6 +123,8 @@ const lastQuestions: Question[] = [
 
 export default function QuestionsScreen({ navigation }: Props) {
   const { user } = useAuth();
+  const route = useRoute<RouteProp<ProfileFlowParamList, 'Questions'>>();
+  const storagePath = route.params?.storagePath;
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
@@ -150,7 +153,7 @@ export default function QuestionsScreen({ navigation }: Props) {
           return;
         }
       }
-      navigation.navigate('Analyzing');
+      navigation.navigate('Analyzing', { storagePath });
     }
   };
 

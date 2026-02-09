@@ -1,3 +1,5 @@
+import { FaceShape } from '../types';
+
 export type StyleData = {
   id: string;
   name: string;
@@ -12,6 +14,17 @@ export type StyleData = {
   careTips: string[];
   tags: string[];
   gender: 'male' | 'female' | 'unisex';
+  faceShapes: FaceShape[];
+  // 추천 알고리즘용 추가 필드
+  hairTypes?: ('straight' | 'wavy' | 'curly')[]; // 적합한 모질
+  hairAmounts?: ('thin' | 'medium' | 'thick')[]; // 적합한 모량
+  // 얼굴 특징별 보너스 (이 특징이 있으면 더 잘 어울림)
+  bestFor?: {
+    foreheadWidth?: ('narrow' | 'medium' | 'wide')[];
+    jawShape?: ('round' | 'angular' | 'pointed')[];
+    lowerFaceLength?: ('short' | 'medium' | 'long')[];
+    cheekboneProminence?: ('flat' | 'moderate' | 'prominent')[];
+  };
 };
 
 export const mockStyles: StyleData[] = [
@@ -34,6 +47,14 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['자연스러운', '여성스러운', '직장인'],
     gender: 'female',
+    faceShapes: ['round', 'oval', 'square'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      jawShape: ['round', 'angular'],
+      lowerFaceLength: ['long'],
+      cheekboneProminence: ['prominent'],
+    },
   },
   {
     id: 'f_002',
@@ -53,6 +74,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['트렌디', '청순한', '데이트'],
     gender: 'female',
+    faceShapes: ['oval', 'oblong', 'heart'],
+    hairTypes: ['straight'],
+    hairAmounts: ['thin', 'medium'],
+    bestFor: {
+      foreheadWidth: ['wide'],
+      lowerFaceLength: ['long'],
+    },
   },
   {
     id: 'f_003',
@@ -72,6 +100,14 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['여성스러운', '화려한', '파티'],
     gender: 'female',
+    faceShapes: ['oval', 'square', 'oblong'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      jawShape: ['angular'],
+      cheekboneProminence: ['prominent'],
+      foreheadWidth: ['narrow'],
+    },
   },
   {
     id: 'f_004',
@@ -91,6 +127,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['트렌디', '개성있는', '캐주얼'],
     gender: 'female',
+    faceShapes: ['round', 'oval', 'heart'],
+    hairTypes: ['straight', 'wavy', 'curly'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      cheekboneProminence: ['prominent'],
+      lowerFaceLength: ['long'],
+    },
   },
   {
     id: 'f_005',
@@ -110,6 +153,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['클래식', '단정한', '직장인'],
     gender: 'female',
+    faceShapes: ['oval', 'heart', 'oblong'],
+    hairTypes: ['straight'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      foreheadWidth: ['narrow', 'medium'],
+      jawShape: ['pointed'],
+    },
   },
   {
     id: 'f_006',
@@ -129,6 +179,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['자연스러운', '청순한', '데일리'],
     gender: 'female',
+    faceShapes: ['round', 'square', 'heart'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['thin', 'medium'],
+    bestFor: {
+      jawShape: ['round', 'angular'],
+      lowerFaceLength: ['long', 'medium'],
+    },
   },
   {
     id: 'f_007',
@@ -148,6 +205,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['개성있는', '동양적', 'Y2K'],
     gender: 'female',
+    faceShapes: ['oval', 'oblong', 'heart'],
+    hairTypes: ['straight'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      foreheadWidth: ['wide'],
+      cheekboneProminence: ['prominent'],
+    },
   },
   {
     id: 'f_008',
@@ -167,6 +231,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['자연스러운', '가벼운', '캐주얼'],
     gender: 'female',
+    faceShapes: ['oval', 'round', 'square'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['thin', 'medium'],
+    bestFor: {
+      jawShape: ['round'],
+      foreheadWidth: ['medium'],
+    },
   },
 
   // ====== 남성 스타일 ======
@@ -188,6 +259,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['깔끔한', '직장인', '데일리'],
     gender: 'male',
+    faceShapes: ['round', 'oval', 'square'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      foreheadWidth: ['narrow', 'medium'],
+      jawShape: ['angular', 'round'],
+    },
   },
   {
     id: 'm_002',
@@ -207,6 +285,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['자연스러운', '트렌디', '캐주얼'],
     gender: 'male',
+    faceShapes: ['oval', 'square', 'oblong'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['thin', 'medium', 'thick'],
+    bestFor: {
+      jawShape: ['angular'],
+      cheekboneProminence: ['prominent'],
+    },
   },
   {
     id: 'm_003',
@@ -226,6 +311,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['자연스러운', '부드러운', '학생'],
     gender: 'male',
+    faceShapes: ['round', 'oval', 'heart'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['thin', 'medium'],
+    bestFor: {
+      foreheadWidth: ['wide'],
+      lowerFaceLength: ['long'],
+    },
   },
   {
     id: 'm_004',
@@ -245,6 +337,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['볼륨', '편한', '데일리'],
     gender: 'male',
+    faceShapes: ['oval', 'oblong', 'heart'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['thin', 'medium'],
+    bestFor: {
+      foreheadWidth: ['narrow'],
+      cheekboneProminence: ['flat'],
+    },
   },
   {
     id: 'm_005',
@@ -264,6 +363,12 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['클래식', '포멀', '직장인'],
     gender: 'male',
+    faceShapes: ['oval', 'oblong', 'square'],
+    hairTypes: ['straight'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      foreheadWidth: ['narrow', 'medium'],
+    },
   },
   {
     id: 'm_006',
@@ -283,6 +388,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['깔끔한', '남성적', '군인'],
     gender: 'male',
+    faceShapes: ['oval', 'square', 'oblong'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      jawShape: ['angular'],
+      foreheadWidth: ['medium', 'wide'],
+    },
   },
   {
     id: 'm_007',
@@ -302,6 +414,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['자연스러운', '트렌디', '대학생'],
     gender: 'male',
+    faceShapes: ['round', 'oval', 'heart'],
+    hairTypes: ['straight', 'wavy', 'curly'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      jawShape: ['angular', 'round'],
+      cheekboneProminence: ['prominent'],
+    },
   },
   {
     id: 'm_008',
@@ -321,6 +440,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['단정한', '면접', '직장인'],
     gender: 'male',
+    faceShapes: ['oval', 'oblong', 'heart'],
+    hairTypes: ['straight'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      foreheadWidth: ['medium', 'wide'],
+      jawShape: ['round'],
+    },
   },
 
   // ====== 트렌드 스타일 (WAD 미용실 참고) ======
@@ -342,6 +468,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['트렌디', '자연스러운', '성수감성'],
     gender: 'female',
+    faceShapes: ['round', 'oval', 'heart'],
+    hairTypes: ['straight', 'wavy', 'curly'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      cheekboneProminence: ['prominent'],
+      lowerFaceLength: ['long'],
+    },
   },
   {
     id: 'f_010',
@@ -361,6 +494,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['여성스러운', '볼륨', '트렌디'],
     gender: 'female',
+    faceShapes: ['oval', 'square', 'oblong'],
+    hairTypes: ['wavy', 'curly'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      jawShape: ['angular'],
+      foreheadWidth: ['narrow'],
+    },
   },
   {
     id: 'f_011',
@@ -380,6 +520,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['빈티지', '자유분방', '감성적'],
     gender: 'female',
+    faceShapes: ['oval', 'heart', 'oblong'],
+    hairTypes: ['wavy', 'curly'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      cheekboneProminence: ['flat', 'moderate'],
+      foreheadWidth: ['narrow'],
+    },
   },
   {
     id: 'f_012',
@@ -399,6 +546,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['레트로', '90s', '텍스처'],
     gender: 'female',
+    faceShapes: ['oval', 'round', 'square'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['medium', 'thick'],
+    bestFor: {
+      jawShape: ['round', 'angular'],
+      lowerFaceLength: ['medium'],
+    },
   },
   {
     id: 'm_009',
@@ -418,6 +572,13 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['자연스러운', '편한', '대학생'],
     gender: 'male',
+    faceShapes: ['round', 'oval', 'heart'],
+    hairTypes: ['straight', 'wavy'],
+    hairAmounts: ['thin', 'medium'],
+    bestFor: {
+      foreheadWidth: ['wide'],
+      lowerFaceLength: ['long'],
+    },
   },
   {
     id: 'm_010',
@@ -437,5 +598,11 @@ export const mockStyles: StyleData[] = [
     ],
     tags: ['편한', '깔끔한', '실용적'],
     gender: 'male',
+    faceShapes: ['oval', 'round', 'square', 'oblong'],
+    hairTypes: ['straight', 'wavy', 'curly'],
+    hairAmounts: ['thin', 'medium', 'thick'],
+    bestFor: {
+      foreheadWidth: ['narrow', 'medium', 'wide'],
+    },
   },
 ];

@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import { ProfileFlowParamList } from '../types';
+import { analyzeFaceShape, faceShapeNames } from '../services/faceAnalysisService';
 
 type Props = {
   navigation: NativeStackNavigationProp<ProfileFlowParamList, 'Analyzing'>;
@@ -16,8 +18,17 @@ const steps = [
 ];
 
 export default function AnalyzingScreen({ navigation }: Props) {
+  const route = useRoute<RouteProp<ProfileFlowParamList, 'Analyzing'>>();
+  const storagePath = route.params?.storagePath;
   const [currentStep, setCurrentStep] = useState(0);
-  const pulseAnim = new Animated.Value(1);
+  const [analysisResult, setAnalysisResult] = useState<{
+    shapeName: string;
+    impression: string;
+    confidence: number;
+  } | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const analysisStarted = useRef(false);
 
   useEffect(() => {
     // 펄스 애니메이션
@@ -36,12 +47,36 @@ export default function AnalyzingScreen({ navigation }: Props) {
       ])
     ).start();
 
-    // 단계별 진행
+    // 얼굴형 분석 시작 (사진이 있는 경우)
+    if (storagePath && !analysisStarted.current) {
+      analysisStarted.current = true;
+      analyzeFaceShape(storagePath)
+        .then((result) => {
+          setAnalysisResult({
+            shapeName: faceShapeNames[result.faceShape],
+            impression: result.details.overallImpression,
+            confidence: result.confidence,
+          });
+          console.log('얼굴형 분석 결과:', result);
+        })
+        .catch((error) => {
+          console.log('얼굴형 분석 실패 (질문 기반으로 진행):', error);
+        });
+    }
+
+    // 단계별 진행 (UI 애니메이션)
     const timers: NodeJS.Timeout[] = [];
     steps.forEach((_, index) => {
       if (index > 0) {
         timers.push(
-          setTimeout(() => setCurrentStep(index), index * 1200)
+          setTimeout(() => {
+            setCurrentStep(index);
+            Animated.timing(progressAnim, {
+              toValue: index / (steps.length - 1),
+              duration: 300,
+              useNativeDriver: false,
+            }).start();
+          }, index * 1200)
         );
       }
     });
@@ -72,18 +107,36 @@ export default function AnalyzingScreen({ navigation }: Props) {
       <Text style={styles.title}>AI가 분석하고 있어요</Text>
       <Text style={styles.stepText}>{step.text}</Text>
 
-      {/* 프로그레스 도트 */}
-      <View style={styles.dots}>
-        {steps.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              index <= currentStep && styles.dotActive,
-            ]}
-          />
-        ))}
+      {/* 분석 결과 미리보기 */}
+      {analysisResult && currentStep >= 2 && (
+        <View style={styles.resultPreview}>
+          <Text style={styles.resultText}>얼굴형: {analysisResult.shapeName}</Text>
+          {analysisResult.impression && analysisResult.impression !== '균형 잡힌 얼굴형' && (
+            <Text style={styles.resultImpression}>{analysisResult.impression}</Text>
+          )}
+          <Text style={styles.resultConfidence}>
+            정확도 {Math.round(analysisResult.confidence * 100)}%
+          </Text>
+        </View>
+      )}
+
+      {/* 프로그레스 바 */}
+      <View style={styles.progressBar}>
+        <Animated.View
+          style={[
+            styles.progressFill,
+            {
+              width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['5%', '100%'],
+              }),
+            },
+          ]}
+        />
       </View>
+      <Text style={styles.progressText}>
+        {currentStep + 1} / {steps.length}
+      </Text>
 
       <Text style={styles.caption}>잠시만 기다려주세요</Text>
     </View>
@@ -114,19 +167,45 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 40,
   },
-  dots: {
-    flexDirection: 'row',
-    gap: 8,
+  resultPreview: {
+    backgroundColor: '#F0FDF4',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     marginBottom: 24,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.border,
+  resultText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.success,
   },
-  dotActive: {
+  resultImpression: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  resultConfidence: {
+    fontSize: 12,
+    color: Colors.textLight,
+    marginTop: 4,
+  },
+  progressBar: {
+    width: 200,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.border,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
     backgroundColor: Colors.primary,
+  },
+  progressText: {
+    fontSize: 13,
+    color: Colors.textLight,
+    marginBottom: 24,
   },
   caption: {
     fontSize: 14,

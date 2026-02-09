@@ -9,9 +9,12 @@ import {
   Alert,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { auth } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Colors } from '../constants/colors';
+import { RootStackParamList } from '../types';
 
 type SettingItemProps = {
   emoji: string;
@@ -41,6 +44,7 @@ function SettingItem({ emoji, title, subtitle, onPress, rightElement, danger }: 
 
 export default function SettingsScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [marketingEnabled, setMarketingEnabled] = useState(false);
 
@@ -191,13 +195,13 @@ export default function SettingsScreen() {
           <SettingItem
             emoji="📄"
             title="이용약관"
-            onPress={() => {}}
+            onPress={() => navigation.navigate('Legal', { type: 'terms' })}
           />
           <View style={styles.divider} />
           <SettingItem
             emoji="🔒"
             title="개인정보 처리방침"
-            onPress={() => {}}
+            onPress={() => navigation.navigate('Legal', { type: 'privacy' })}
           />
           <View style={styles.divider} />
           <SettingItem

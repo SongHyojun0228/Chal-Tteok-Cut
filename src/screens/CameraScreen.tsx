@@ -12,6 +12,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '../constants/colors';
 import { ProfileFlowParamList } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { uploadFacePhoto } from '../services/storageService';
 
 const { width } = Dimensions.get('window');
 
@@ -20,7 +22,9 @@ type Props = {
 };
 
 export default function CameraScreen({ navigation }: Props) {
+  const { user } = useAuth();
   const [photo, setPhoto] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -58,9 +62,21 @@ export default function CameraScreen({ navigation }: Props) {
     }
   };
 
-  const handleNext = () => {
-    // TODO: 사진을 Firebase Storage에 업로드
-    navigation.navigate('Questions');
+  const handleNext = async () => {
+    let storagePath: string | undefined;
+    if (photo && user) {
+      setUploading(true);
+      try {
+        const result = await uploadFacePhoto(user.uid, photo);
+        storagePath = result.storagePath;
+      } catch {
+        // 업로드 실패해도 진행 (사진은 선택사항)
+        console.log('사진 업로드 실패');
+      } finally {
+        setUploading(false);
+      }
+    }
+    navigation.navigate('Questions', { storagePath });
   };
 
   return (
@@ -101,8 +117,8 @@ export default function CameraScreen({ navigation }: Props) {
             <TouchableOpacity style={styles.retakeButton} onPress={() => setPhoto(null)}>
               <Text style={styles.retakeText}>다시 찍기</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-              <Text style={styles.nextText}>다음으로</Text>
+            <TouchableOpacity style={styles.nextButton} onPress={handleNext} disabled={uploading}>
+              <Text style={styles.nextText}>{uploading ? '업로드 중...' : '다음으로'}</Text>
             </TouchableOpacity>
           </View>
         ) : (

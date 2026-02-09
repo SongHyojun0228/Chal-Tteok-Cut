@@ -10,16 +10,25 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFFBF7"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.chaltteokcut.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "찰떡컷이 얼굴형 분석을 위해 카메라 접근이 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "찰떡컷이 사진을 선택할 수 있도록 갤러리 접근이 필요합니다.",
+        "CFBundleDisplayName": "찰떡컷"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FF6B6B"
       },
+      "package": "com.chaltteokcut.app",
+      "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },

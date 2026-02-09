@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Colors } from '../constants/colors';
 import { StyleData } from '../constants/mockStyles';
 
 type Props = {
   style: StyleData;
   onPress: () => void;
+  index?: number;
 };
 
 function DifficultyStars({ level }: { level: 1 | 2 | 3 }) {
@@ -21,56 +22,81 @@ const starStyles = StyleSheet.create({
   stars: { fontSize: 14, color: Colors.accent, letterSpacing: 2 },
 });
 
-export default function StyleCard({ style: item, onPress }: Props) {
+function StyleCardInner({ style: item, onPress, index = 0 }: Props) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    const delay = index * 120;
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        delay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
-      {/* 상단: 매칭 점수 배지 */}
-      <View style={styles.scoreBadge}>
-        <Text style={styles.scoreIcon}>⭐</Text>
-        <Text style={styles.scoreText}>{item.matchScore}% 매칭</Text>
-      </View>
-
-      {/* 이미지 placeholder */}
-      <View style={styles.imageArea}>
-        <Text style={styles.imagePlaceholder}>💇</Text>
-        <Text style={styles.imageLabel}>{item.category}</Text>
-      </View>
-
-      {/* 정보 영역 */}
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.reason} numberOfLines={2}>{item.reason}</Text>
-
-        {/* 메타 정보 */}
-        <View style={styles.meta}>
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>관리 난이도</Text>
-            <DifficultyStars level={item.difficulty} />
-          </View>
-          <View style={styles.metaDivider} />
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>스타일링</Text>
-            <Text style={styles.metaValue}>{item.maintenanceTime}분</Text>
-          </View>
-          <View style={styles.metaDivider} />
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>가격대</Text>
-            <Text style={styles.metaValue}>{item.priceRange}</Text>
-          </View>
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+      <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
+        {/* 상단: 매칭 점수 배지 */}
+        <View style={styles.scoreBadge}>
+          <Text style={styles.scoreIcon}>⭐</Text>
+          <Text style={styles.scoreText}>{item.matchScore}% 매칭</Text>
         </View>
 
-        {/* 태그 */}
-        <View style={styles.tags}>
-          {item.tags.map((tag) => (
-            <View key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
+        {/* 이미지 placeholder */}
+        <View style={styles.imageArea}>
+          <Text style={styles.imagePlaceholder}>💇</Text>
+          <Text style={styles.imageLabel}>{item.category}</Text>
+        </View>
+
+        {/* 정보 영역 */}
+        <View style={styles.info}>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.reason} numberOfLines={2}>{item.reason}</Text>
+
+          {/* 메타 정보 */}
+          <View style={styles.meta}>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>관리 난이도</Text>
+              <DifficultyStars level={item.difficulty} />
             </View>
-          ))}
+            <View style={styles.metaDivider} />
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>스타일링</Text>
+              <Text style={styles.metaValue}>{item.maintenanceTime}분</Text>
+            </View>
+            <View style={styles.metaDivider} />
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>가격대</Text>
+              <Text style={styles.metaValue}>{item.priceRange}</Text>
+            </View>
+          </View>
+
+          {/* 태그 */}
+          <View style={styles.tags}>
+            {item.tags.map((tag) => (
+              <View key={tag} style={styles.tag}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
+
+export default React.memo(StyleCardInner);
 
 const styles = StyleSheet.create({
   card: {

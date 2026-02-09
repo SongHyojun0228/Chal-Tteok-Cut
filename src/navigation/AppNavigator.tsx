@@ -19,6 +19,7 @@ import ResultScreen from '../screens/ResultScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import StyleDetailScreen from '../screens/StyleDetailScreen';
+import LegalScreen from '../screens/LegalScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileFlowParamList>();
@@ -27,7 +28,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // 프로필 생성 플로우
 function ProfileFlow() {
   return (
-    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <ProfileStack.Screen name="Camera" component={CameraScreen} />
       <ProfileStack.Screen name="Questions" component={QuestionsScreen} />
       <ProfileStack.Screen
@@ -113,7 +114,7 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {!user ? (
           // 비로그인
           <Stack.Screen name="Login" component={LoginScreen} />
@@ -133,6 +134,11 @@ export default function AppNavigator() {
                 headerTintColor: Colors.textPrimary,
               }}
             />
+            <Stack.Screen
+              name="Legal"
+              component={LegalScreen}
+              options={{ presentation: 'modal' }}
+            />
           </>
         ) : (
           // 로그인 + 프로필 없음 → 온보딩부터
@@ -149,6 +155,11 @@ export default function AppNavigator() {
                 headerTitle: '스타일 상세',
                 headerTintColor: Colors.textPrimary,
               }}
+            />
+            <Stack.Screen
+              name="Legal"
+              component={LegalScreen}
+              options={{ presentation: 'modal' }}
             />
           </>
         )}

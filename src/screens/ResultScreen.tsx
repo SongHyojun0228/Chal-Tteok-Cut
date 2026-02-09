@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -14,6 +14,9 @@ import { mockStyles, StyleData } from '../constants/mockStyles';
 import StyleCard from '../components/StyleCard';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserProfile } from '../services/userService';
+import { faceShapeNames, FaceDetails } from '../services/faceAnalysisService';
+import { getRecommendedStyles } from '../services/recommendationService';
+import { FaceShape } from '../types';
 
 export default function ResultScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -21,6 +24,8 @@ export default function ResultScreen() {
   const [filteredStyles, setFilteredStyles] = useState<StyleData[]>(mockStyles);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
+  const [detectedFaceShape, setDetectedFaceShape] = useState<FaceShape | null>(null);
+  const [faceDetails, setFaceDetails] = useState<FaceDetails | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -30,12 +35,13 @@ export default function ResultScreen() {
           setUserName(user.displayName || '');
 
           if (profile) {
-            // 성별에 맞는 스타일 필터링
-            const gender = profile.gender;
-            const filtered = mockStyles.filter(
-              (s) => s.gender === 'unisex' || s.gender === gender
-            );
-            setFilteredStyles(filtered);
+            const faceShape = profile.faceShape as FaceShape | undefined;
+            if (faceShape) setDetectedFaceShape(faceShape);
+            if (profile.faceAnalysis?.details) setFaceDetails(profile.faceAnalysis.details);
+
+            // 추천 알고리즘으로 점수 계산 + 정렬
+            const recommended = getRecommendedStyles(mockStyles, profile);
+            setFilteredStyles(recommended);
           } else {
             setFilteredStyles(mockStyles);
           }
@@ -63,35 +69,52 @@ export default function ResultScreen() {
           {userName ? `${userName}님을 위한` : '찰떡같이 어울리는'}
         </Text>
         <Text style={styles.title}>맞춤 스타일 추천 ✂️</Text>
-        <Text style={styles.subtitle}>
-          AI가 분석한 Top {filteredStyles.length} 스타일이에요
-        </Text>
+        {detectedFaceShape ? (
+          <View>
+            <Text style={styles.subtitle}>
+              얼굴형: {faceShapeNames[detectedFaceShape]} | Top {filteredStyles.length} 스타일
+            </Text>
+            {faceDetails?.overallImpression && faceDetails.overallImpression !== '균형 잡힌 얼굴형' && (
+              <Text style={styles.impression}>{faceDetails.overallImpression}</Text>
+            )}
+          </View>
+        ) : (
+          <Text style={styles.subtitle}>
+            AI가 분석한 Top {filteredStyles.length} 스타일이에요
+          </Text>
+        )}
       </View>
 
       {/* 스타일 카드 리스트 */}
-      <ScrollView
+      <FlatList
+        data={filteredStyles}
+        keyExtractor={(item) => item.id}
         style={styles.list}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-      >
-        {filteredStyles.map((item, index) => (
-          <View key={item.id}>
+        initialNumToRender={3}
+        maxToRenderPerBatch={3}
+        windowSize={5}
+        renderItem={({ item, index }) => (
+          <View>
             <View style={styles.rankBadge}>
               <Text style={styles.rankText}>{index + 1}위</Text>
             </View>
             <StyleCard
               style={item}
+              index={index}
               onPress={() => navigation.navigate('StyleDetail', { styleId: item.id })}
             />
           </View>
-        ))}
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            더 많은 스타일은 곧 업데이트될 예정이에요!
-          </Text>
-        </View>
-      </ScrollView>
+        )}
+        ListFooterComponent={
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              더 많은 스타일은 곧 업데이트될 예정이에요!
+            </Text>
+          </View>
+        }
+      />
     </View>
   );
 }
@@ -126,6 +149,11 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: Colors.textLight,
+  },
+  impression: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
   },
   list: {
     flex: 1,

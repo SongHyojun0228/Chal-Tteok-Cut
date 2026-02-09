@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Animated,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '../constants/colors';
@@ -43,6 +44,7 @@ const slides = [
 export default function OnboardingScreen({ navigation }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -103,11 +105,18 @@ export default function OnboardingScreen({ navigation }: Props) {
         </View>
 
         {/* 다음/시작 버튼 */}
-        <TouchableOpacity style={styles.button} onPress={handleNext}>
-          <Text style={styles.buttonText}>
-            {currentIndex === slides.length - 1 ? '시작하기' : '다음'}
-          </Text>
-        </TouchableOpacity>
+        <Animated.View style={{ width: '100%', transform: [{ scale: buttonScale }] }}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleNext}
+            onPressIn={() => Animated.spring(buttonScale, { toValue: 0.95, useNativeDriver: true }).start()}
+            onPressOut={() => Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true }).start()}
+          >
+            <Text style={styles.buttonText}>
+              {currentIndex === slides.length - 1 ? '시작하기' : '다음'}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     </View>
   );

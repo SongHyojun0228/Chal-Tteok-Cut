@@ -5,12 +5,13 @@ export type RootStackParamList = {
   ProfileFlow: undefined;
   MainTabs: undefined;
   StyleDetail: { styleId: string };
+  Legal: { type: 'privacy' | 'terms' };
 };
 
 export type ProfileFlowParamList = {
   Camera: undefined;
-  Questions: undefined;
-  Analyzing: undefined;
+  Questions: { storagePath?: string };
+  Analyzing: { storagePath?: string };
 };
 
 export type MainTabParamList = {

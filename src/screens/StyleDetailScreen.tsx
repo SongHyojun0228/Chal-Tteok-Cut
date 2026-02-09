@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Modal,
+  Share,
+  Animated,
 } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
+import QRCode from 'react-native-qrcode-svg';
 import { Colors } from '../constants/colors';
 import { RootStackParamList } from '../types';
 import { mockStyles } from '../constants/mockStyles';
 import { useAuth } from '../contexts/AuthContext';
 import { toggleSavedStyle, getUserProfile } from '../services/userService';
+import { faceShapeNames } from '../services/faceAnalysisService';
+import { FaceShape } from '../types';
 
 export default function StyleDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'StyleDetail'>>();
@@ -20,17 +26,66 @@ export default function StyleDetailScreen() {
   const item = mockStyles.find((s) => s.id === route.params.styleId);
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [userFaceShape, setUserFaceShape] = useState<FaceShape | null>(null);
+  const modalAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // 현재 저장 상태 확인
     if (user && item) {
       getUserProfile(user.uid).then((profile) => {
         if (profile?.savedStyles?.includes(item.id)) {
           setIsSaved(true);
         }
+        if (profile?.faceShape) {
+          setUserFaceShape(profile.faceShape as FaceShape);
+        }
       });
     }
   }, [user, item]);
+
+  const openQRModal = () => {
+    setShowQR(true);
+    Animated.spring(modalAnim, { toValue: 1, useNativeDriver: true }).start();
+  };
+
+  const closeQRModal = () => {
+    Animated.timing(modalAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setShowQR(false);
+    });
+  };
+
+  const shareLink = async () => {
+    if (!item) return;
+    const shareData = [
+      `찰떡컷 - ${item.name}`,
+      `매칭 점수: ${item.matchScore}%`,
+      userFaceShape ? `얼굴형: ${faceShapeNames[userFaceShape]}` : '',
+      `카테고리: ${item.category}`,
+      `관리 난이도: ${'★'.repeat(item.difficulty)}${'☆'.repeat(3 - item.difficulty)}`,
+      `예상 가격: ${item.priceRange}`,
+      '',
+      `추천 이유: ${item.reason}`,
+      '',
+      '찰떡컷 앱에서 확인하세요!',
+    ].filter(Boolean).join('\n');
+
+    try {
+      await Share.share({ message: shareData });
+    } catch {
+      Alert.alert('공유 실패', '다시 시도해주세요.');
+    }
+  };
+
+  // QR에 담을 데이터
+  const qrData = item ? JSON.stringify({
+    app: 'chaltteok-cut',
+    styleId: item.id,
+    styleName: item.name,
+    matchScore: item.matchScore,
+    faceShape: userFaceShape || 'unknown',
+    category: item.category,
+    difficulty: item.difficulty,
+  }) : '';
 
   const handleSave = async () => {
     if (!user || !item) return;
@@ -138,13 +193,57 @@ export default function StyleDetailScreen() {
             {saving ? '저장 중...' : isSaved ? '💔 저장 해제' : '❤️ 이 스타일 저장'}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={() => Alert.alert('공유', 'QR 코드 공유 기능은 곧 추가될 예정이에요!')}
-        >
+        <TouchableOpacity style={styles.shareButton} onPress={openQRModal}>
           <Text style={styles.shareButtonText}>📤 미용사와 공유</Text>
         </TouchableOpacity>
       </View>
+
+      {/* QR 공유 모달 */}
+      <Modal visible={showQR} transparent animationType="none" onRequestClose={closeQRModal}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeQRModal}>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                transform: [{ scale: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }],
+                opacity: modalAnim,
+              },
+            ]}
+          >
+            <TouchableOpacity activeOpacity={1}>
+              <Text style={styles.modalTitle}>미용사에게 보여주세요</Text>
+              <Text style={styles.modalSubtitle}>{item.name} | {item.matchScore}% 매칭</Text>
+
+              <View style={styles.qrContainer}>
+                <QRCode value={qrData} size={200} color={Colors.textPrimary} backgroundColor={Colors.white} />
+              </View>
+
+              {userFaceShape && (
+                <View style={styles.faceShapeBadge}>
+                  <Text style={styles.faceShapeBadgeText}>
+                    얼굴형: {faceShapeNames[userFaceShape]}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.modalInfo}>
+                <Text style={styles.modalInfoText}>카테고리: {item.category}</Text>
+                <Text style={styles.modalInfoText}>난이도: {'★'.repeat(item.difficulty)}{'☆'.repeat(3 - item.difficulty)}</Text>
+                <Text style={styles.modalInfoText}>가격: {item.priceRange}</Text>
+              </View>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.shareLinkButton} onPress={shareLink}>
+                  <Text style={styles.shareLinkText}>링크로 공유</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.closeButton} onPress={closeQRModal}>
+                  <Text style={styles.closeButtonText}>닫기</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -324,6 +423,92 @@ const styles = StyleSheet.create({
   shareButtonText: {
     color: Colors.primary,
     fontSize: 17,
+    fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    padding: 28,
+    width: '85%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  qrContainer: {
+    padding: 16,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 16,
+  },
+  faceShapeBadge: {
+    backgroundColor: '#F0FDF4',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  faceShapeBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.success,
+  },
+  modalInfo: {
+    alignSelf: 'stretch',
+    gap: 6,
+    marginBottom: 20,
+  },
+  modalInfoText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    alignSelf: 'stretch',
+  },
+  shareLinkButton: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  shareLinkText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  closeButton: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: Colors.textSecondary,
+    fontSize: 15,
     fontWeight: '700',
   },
 });

@@ -14,6 +14,8 @@ import { RootStackParamList } from '../types';
 import { mockStyles } from '../constants/mockStyles';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserProfile, UserProfile, answerLabels } from '../services/userService';
+import { faceShapeNames, faceShapeDescriptions } from '../services/faceAnalysisService';
+import { FaceShape } from '../types';
 
 function getLabel(key: string, value: string): string {
   return answerLabels[key]?.[value] || value || '-';
@@ -92,13 +94,83 @@ export default function ProfileScreen() {
 
       {/* 얼굴형 분석 결과 카드 */}
       <View style={styles.faceCard}>
-        <View style={styles.faceIconArea}>
-          <Text style={styles.faceIcon}>🧑</Text>
+        <View style={styles.faceCardHeader}>
+          <View style={styles.faceIconArea}>
+            <Text style={styles.faceIcon}>🧑</Text>
+          </View>
+          <View style={styles.faceInfo}>
+            <Text style={styles.faceLabel}>내 얼굴형</Text>
+            <Text style={styles.faceShape}>{faceShapeLabel}</Text>
+            {profile.faceShape && profile.faceShape !== 'unknown' && (
+              <Text style={styles.faceDesc}>
+                {faceShapeDescriptions[profile.faceShape as FaceShape]}
+              </Text>
+            )}
+          </View>
         </View>
-        <View style={styles.faceInfo}>
-          <Text style={styles.faceLabel}>내 얼굴형</Text>
-          <Text style={styles.faceShape}>{faceShapeLabel}</Text>
-        </View>
+
+        {profile.faceAnalysis?.details && (() => {
+          const d = profile.faceAnalysis.details;
+          return (
+            <>
+              {/* 전체 인상 */}
+              {d.overallImpression && d.overallImpression !== '균형 잡힌 얼굴형' && (
+                <View style={styles.impressionBox}>
+                  <Text style={styles.impressionText}>{d.overallImpression}</Text>
+                </View>
+              )}
+
+              {/* 얼굴 비율 */}
+              {d.widthToHeightRatio != null && (
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailTitle}>얼굴 비율 분석</Text>
+                  <View style={styles.detailGrid}>
+                    <DetailChip label="가로:세로" value={`${d.widthToHeightRatio}`} />
+                    {d.foreheadWidth && <DetailChip label="이마" value={d.foreheadWidth === 'narrow' ? '좁은 편' : d.foreheadWidth === 'wide' ? '넓은 편' : '보통'} />}
+                    {d.cheekboneProminence && <DetailChip label="광대" value={d.cheekboneProminence === 'flat' ? '평평' : d.cheekboneProminence === 'prominent' ? '도드라짐' : '보통'} />}
+                    {d.jawWidth && <DetailChip label="턱 너비" value={d.jawWidth === 'narrow' ? '좁은 편' : d.jawWidth === 'wide' ? '넓은 편' : '보통'} />}
+                    {d.jawShape && <DetailChip label="턱 형태" value={d.jawShape === 'round' ? '둥근' : d.jawShape === 'angular' ? '각진' : '뾰족'} />}
+                    {d.lowerFaceLength && <DetailChip label="하관 길이" value={d.lowerFaceLength === 'short' ? '짧은 편' : d.lowerFaceLength === 'long' ? '긴 편' : '보통'} />}
+                  </View>
+                </View>
+              )}
+
+              {/* 얼굴 3등분 */}
+              {d.faceThirds && (
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailTitle}>얼굴 3등분 비율</Text>
+                  <View style={styles.thirdsContainer}>
+                    <ThirdBar label="상안부" value={d.faceThirds.upper} />
+                    <ThirdBar label="중안부" value={d.faceThirds.middle} />
+                    <ThirdBar label="하안부" value={d.faceThirds.lower} />
+                  </View>
+                </View>
+              )}
+
+              {/* 맞춤 스타일 팁 */}
+              {profile.faceAnalysis.recommendations && profile.faceAnalysis.recommendations.length > 0 && (
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailTitle}>맞춤 스타일 팁</Text>
+                  {profile.faceAnalysis.recommendations.map((tip, i) => (
+                    <View key={i} style={styles.tipItem}>
+                      <Text style={styles.tipBullet}>💡</Text>
+                      <Text style={styles.tipContent}>{tip}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          );
+        })()}
+
+        {profile.faceAnalysis?.confidence != null && (
+          <View style={styles.confidenceRow}>
+            <Text style={styles.confidenceLabel}>분석 정확도</Text>
+            <Text style={styles.confidenceValue}>
+              {Math.round(profile.faceAnalysis.confidence * 100)}%
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* 상세 프로필 */}
@@ -159,6 +231,27 @@ function InfoItem({ label, value, emoji }: { label: string; value: string; emoji
       <Text style={styles.infoEmoji}>{emoji}</Text>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+function DetailChip({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.detailChip}>
+      <Text style={styles.detailChipLabel}>{label}</Text>
+      <Text style={styles.detailChipValue}>{value}</Text>
+    </View>
+  );
+}
+
+function ThirdBar({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.thirdRow}>
+      <Text style={styles.thirdLabel}>{label}</Text>
+      <View style={styles.thirdBarBg}>
+        <View style={[styles.thirdBarFill, { width: `${Math.min(value * 3, 100)}%` }]} />
+      </View>
+      <Text style={styles.thirdValue}>{value}%</Text>
     </View>
   );
 }
@@ -248,13 +341,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 20,
     padding: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
+  },
+  faceCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   faceIconArea: {
     width: 72,
@@ -280,6 +375,122 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: Colors.textPrimary,
+  },
+  faceDesc: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  impressionBox: {
+    marginTop: 16,
+    backgroundColor: '#FFF7ED',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  impressionText: {
+    fontSize: 14,
+    color: Colors.accent,
+    fontWeight: '600',
+  },
+  detailSection: {
+    marginTop: 20,
+  },
+  detailTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 10,
+  },
+  detailGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  detailChip: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  detailChipLabel: {
+    fontSize: 11,
+    color: Colors.textLight,
+    marginBottom: 2,
+  },
+  detailChipValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  thirdsContainer: {
+    gap: 8,
+  },
+  thirdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  thirdLabel: {
+    width: 48,
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  thirdBarBg: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 4,
+    marginHorizontal: 8,
+    overflow: 'hidden',
+  },
+  thirdBarFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: 4,
+  },
+  thirdValue: {
+    width: 36,
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    textAlign: 'right',
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  tipBullet: {
+    fontSize: 14,
+    marginRight: 8,
+    marginTop: 1,
+  },
+  tipContent: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  confidenceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  confidenceLabel: {
+    fontSize: 13,
+    color: Colors.textLight,
+  },
+  confidenceValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   section: {
     paddingHorizontal: 24,

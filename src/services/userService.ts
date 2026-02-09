@@ -1,5 +1,6 @@
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { FaceAnalysisResult } from './faceAnalysisService';
 
 export type UserProfile = {
   gender: string;
@@ -10,6 +11,7 @@ export type UserProfile = {
   stylingTime: string;
   stylePref: string;
   faceShape?: string;
+  faceAnalysis?: FaceAnalysisResult & { analyzedAt?: any };
   savedStyles: string[];
   createdAt?: any;
   updatedAt?: any;
