@@ -196,6 +196,18 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* PWA 설치 안내 (웹에서만) */}
+        {Platform.OS === 'web' && (
+          <View style={styles.pwaBanner}>
+            <Text style={styles.pwaBannerTitle}>📲 앱으로 설치하면 더 편해요</Text>
+            <Text style={styles.pwaBannerDesc}>
+              {/iPad|iPhone|iPod/.test(navigator?.userAgent || '')
+                ? 'Safari 하단 공유 버튼(□↑) → "홈 화면에 추가"'
+                : 'Chrome 메뉴(⋮) → "홈 화면에 추가"'}
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* 성공 모달 */}
@@ -345,6 +357,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.primary,
     fontWeight: '600',
+  },
+  pwaBanner: {
+    marginTop: 24,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 18,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  pwaBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 6,
+  },
+  pwaBannerDesc: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   // 성공 모달
   modalOverlay: {
