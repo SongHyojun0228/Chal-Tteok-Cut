@@ -1,5 +1,6 @@
 // 네비게이션 타입 정의
 export type RootStackParamList = {
+  Landing: undefined;
   Login: undefined;
   Onboarding: undefined;
   ProfileFlow: { mode?: 'full' | 'photoOnly' } | undefined;

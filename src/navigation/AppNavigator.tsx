@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { hasProfile } from '../services/userService';
 
 // Screens
+import LandingScreen from '../screens/LandingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import CameraScreen from '../screens/CameraScreen';
@@ -125,8 +126,13 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {!user ? (
-          // 비로그인
-          <Stack.Screen name="Login" component={LoginScreen} />
+          // 비로그인: 웹에서는 랜딩페이지 먼저, 네이티브는 바로 로그인
+          <>
+            {Platform.OS === 'web' && (
+              <Stack.Screen name="Landing" component={LandingScreen} />
+            )}
+            <Stack.Screen name="Login" component={LoginScreen} />
+          </>
         ) : profileExists ? (
           // 로그인 + 프로필 있음 → 바로 메인
           <>
