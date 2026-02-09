@@ -6,12 +6,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC-Xj5wd_ukjdn5S07vvJRVT3ma9g8qhXw",
-  authDomain: "chaltteok-cut.firebaseapp.com",
-  projectId: "chaltteok-cut",
-  storageBucket: "chaltteok-cut.firebasestorage.app",
-  messagingSenderId: "687389796866",
-  appId: "1:687389796866:web:d4e8b461a3adaba060551b",
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Firebase 초기화
