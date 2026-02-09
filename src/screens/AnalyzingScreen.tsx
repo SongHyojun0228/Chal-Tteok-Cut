@@ -5,6 +5,8 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import { ProfileFlowParamList } from '../types';
 import { analyzeFaceShape, faceShapeNames } from '../services/faceAnalysisService';
+import { updateFaceAnalysis } from '../services/userService';
+import { useAuth } from '../contexts/AuthContext';
 
 type Props = {
   navigation: NativeStackNavigationProp<ProfileFlowParamList, 'Analyzing'>;
@@ -19,7 +21,9 @@ const steps = [
 
 export default function AnalyzingScreen({ navigation }: Props) {
   const route = useRoute<RouteProp<ProfileFlowParamList, 'Analyzing'>>();
+  const { user } = useAuth();
   const storagePath = route.params?.storagePath;
+  const photoOnly = route.params?.photoOnly || false;
   const [currentStep, setCurrentStep] = useState(0);
   const [analysisResult, setAnalysisResult] = useState<{
     shapeName: string;
@@ -51,13 +55,23 @@ export default function AnalyzingScreen({ navigation }: Props) {
     if (storagePath && !analysisStarted.current) {
       analysisStarted.current = true;
       analyzeFaceShape(storagePath)
-        .then((result) => {
+        .then(async (result) => {
           setAnalysisResult({
             shapeName: faceShapeNames[result.faceShape],
             impression: result.details.overallImpression,
             confidence: result.confidence,
           });
           console.log('얼굴형 분석 결과:', result);
+
+          // photoOnly 모드: 질문 답변은 유지하고 얼굴 분석만 업데이트
+          if (photoOnly && user) {
+            try {
+              await updateFaceAnalysis(user.uid, result.faceShape, result);
+              console.log('얼굴 분석만 업데이트 완료');
+            } catch (e) {
+              console.log('얼굴 분석 업데이트 실패:', e);
+            }
+          }
         })
         .catch((error) => {
           console.log('얼굴형 분석 실패 (질문 기반으로 진행):', error);

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Alert,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -87,7 +88,23 @@ export default function ProfileScreen() {
         </View>
         <TouchableOpacity
           style={styles.reanalyzeButton}
-          onPress={() => navigation.navigate('ProfileFlow')}
+          onPress={() => {
+            Alert.alert(
+              '재분석 방법 선택',
+              '어떤 방식으로 재분석할까요?',
+              [
+                { text: '취소', style: 'cancel' },
+                {
+                  text: '사진만 다시 찍기',
+                  onPress: () => navigation.navigate('ProfileFlow', { mode: 'photoOnly' }),
+                },
+                {
+                  text: '전체 다시하기',
+                  onPress: () => navigation.navigate('ProfileFlow', { mode: 'full' }),
+                },
+              ]
+            );
+          }}
         >
           <Text style={styles.reanalyzeText}>🔄 재분석</Text>
         </TouchableOpacity>

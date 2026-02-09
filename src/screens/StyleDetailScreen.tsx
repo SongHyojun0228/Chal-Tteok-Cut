@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import QRCode from 'react-native-qrcode-svg';
+import { captureRef } from 'react-native-view-shot';
 import { Colors } from '../constants/colors';
 import { RootStackParamList } from '../types';
 import { mockStyles } from '../constants/mockStyles';
@@ -33,6 +34,7 @@ export default function StyleDetailScreen() {
   const [showQR, setShowQR] = useState(false);
   const [userFaceShape, setUserFaceShape] = useState<FaceShape | null>(null);
   const modalAnim = useRef(new Animated.Value(0)).current;
+  const qrCardRef = useRef<any>(null);
 
   useEffect(() => {
     if (user && item) {
@@ -77,6 +79,19 @@ export default function StyleDetailScreen() {
       await Share.share({ message: shareData });
     } catch {
       Alert.alert('공유 실패', '다시 시도해주세요.');
+    }
+  };
+
+  const shareAsImage = async () => {
+    if (!qrCardRef.current) return;
+    try {
+      const uri = await captureRef(qrCardRef, {
+        format: 'png',
+        quality: 1,
+      });
+      await Share.share({ url: uri });
+    } catch {
+      Alert.alert('공유 실패', '이미지 캡처에 실패했어요. 다시 시도해주세요.');
     }
   };
 
@@ -294,35 +309,80 @@ export default function StyleDetailScreen() {
             ]}
           >
             <TouchableOpacity activeOpacity={1}>
-              <Text style={styles.modalTitle}>미용사에게 보여주세요</Text>
-              <Text style={styles.modalSubtitle}>{item.name} | {item.matchScore}% 매칭</Text>
-
-              <View style={styles.qrContainer}>
-                <QRCode value={qrData} size={200} color={Colors.textPrimary} backgroundColor={Colors.white} />
-              </View>
-
-              {userFaceShape && (
-                <View style={styles.faceShapeBadge}>
-                  <Text style={styles.faceShapeBadgeText}>
-                    얼굴형: {faceShapeNames[userFaceShape]}
-                  </Text>
+              {/* 캡처 영역 */}
+              <View ref={qrCardRef} collapsable={false} style={styles.qrCard}>
+                {/* 상단: 썸네일 + 스타일 정보 */}
+                <View style={styles.qrCardHeader}>
+                  <View style={styles.qrThumbnail}>
+                    {styleImages[item.id] ? (
+                      <Image source={styleImages[item.id]} style={styles.qrThumbnailImage} resizeMode="cover" />
+                    ) : (
+                      <Text style={styles.qrThumbnailEmoji}>💇</Text>
+                    )}
+                  </View>
+                  <View style={styles.qrCardInfo}>
+                    <Text style={styles.qrStyleName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.qrMatchScore}>⭐ {item.matchScore}% 매칭</Text>
+                    {userFaceShape && (
+                      <Text style={styles.qrFaceShape}>
+                        얼굴형: {faceShapeNames[userFaceShape]}
+                      </Text>
+                    )}
+                  </View>
                 </View>
-              )}
 
-              <View style={styles.modalInfo}>
-                <Text style={styles.modalInfoText}>카테고리: {item.category}</Text>
-                <Text style={styles.modalInfoText}>난이도: {'★'.repeat(item.difficulty)}{'☆'.repeat(3 - item.difficulty)}</Text>
-                <Text style={styles.modalInfoText}>가격: {item.priceRange}</Text>
+                <View style={styles.qrDivider} />
+
+                {/* QR 코드 */}
+                <View style={styles.qrContainer}>
+                  <QRCode
+                    value={qrData}
+                    size={160}
+                    color={Colors.textPrimary}
+                    backgroundColor={Colors.white}
+                  />
+                </View>
+
+                {/* 메타 정보 */}
+                <View style={styles.qrMetaRow}>
+                  <View style={styles.qrMetaItem}>
+                    <Text style={styles.qrMetaLabel}>카테고리</Text>
+                    <Text style={styles.qrMetaValue}>{item.category}</Text>
+                  </View>
+                  <View style={styles.qrMetaSep} />
+                  <View style={styles.qrMetaItem}>
+                    <Text style={styles.qrMetaLabel}>난이도</Text>
+                    <Text style={styles.qrMetaValue}>
+                      {'★'.repeat(item.difficulty)}{'☆'.repeat(3 - item.difficulty)}
+                    </Text>
+                  </View>
+                  <View style={styles.qrMetaSep} />
+                  <View style={styles.qrMetaItem}>
+                    <Text style={styles.qrMetaLabel}>가격</Text>
+                    <Text style={styles.qrMetaValue}>{item.priceRange}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.qrDivider} />
+
+                {/* 브랜딩 */}
+                <View style={styles.qrBranding}>
+                  <Text style={styles.qrBrandingText}>✂️ 찰떡컷으로 분석한 결과입니다</Text>
+                </View>
               </View>
 
+              {/* 하단 버튼 (캡처 영역 바깥) */}
               <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.shareLinkButton} onPress={shareLink}>
-                  <Text style={styles.shareLinkText}>링크로 공유</Text>
+                <TouchableOpacity style={styles.imageShareButton} onPress={shareAsImage}>
+                  <Text style={styles.imageShareText}>🖼️ 이미지로 저장</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.closeButton} onPress={closeQRModal}>
-                  <Text style={styles.closeButtonText}>닫기</Text>
+                <TouchableOpacity style={styles.linkShareButton} onPress={shareLink}>
+                  <Text style={styles.linkShareText}>🔗 링크 공유</Text>
                 </TouchableOpacity>
               </View>
+              <TouchableOpacity style={styles.closeButton} onPress={closeQRModal}>
+                <Text style={styles.closeButtonText}>닫기</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
           </Animated.View>
         </TouchableOpacity>
@@ -610,6 +670,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
   },
+  // QR Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -619,81 +680,145 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: Colors.white,
     borderRadius: 24,
-    padding: 28,
-    width: '85%',
+    padding: 20,
+    width: '88%',
     alignItems: 'center',
   },
-  modalTitle: {
-    fontSize: 20,
+  // QR Card (캡처 영역)
+  qrCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 20,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  qrCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  qrThumbnail: {
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  qrThumbnailImage: {
+    width: 72,
+    height: 110,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  qrThumbnailEmoji: {
+    fontSize: 32,
+  },
+  qrCardInfo: {
+    flex: 1,
+  },
+  qrStyleName: {
+    fontSize: 18,
     fontWeight: '800',
     color: Colors.textPrimary,
     marginBottom: 4,
-    textAlign: 'center',
   },
-  modalSubtitle: {
+  qrMatchScore: {
     fontSize: 15,
+    fontWeight: '700',
+    color: Colors.accent,
+    marginBottom: 2,
+  },
+  qrFaceShape: {
+    fontSize: 13,
     color: Colors.textSecondary,
-    marginBottom: 24,
-    textAlign: 'center',
+  },
+  qrDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 14,
   },
   qrContainer: {
-    padding: 16,
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 16,
-  },
-  faceShapeBadge: {
-    backgroundColor: '#F0FDF4',
+    alignItems: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 16,
   },
-  faceShapeBadgeText: {
-    fontSize: 14,
+  qrMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  qrMetaItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  qrMetaLabel: {
+    fontSize: 11,
+    color: Colors.textLight,
+    marginBottom: 2,
+  },
+  qrMetaValue: {
+    fontSize: 13,
     fontWeight: '700',
-    color: Colors.success,
+    color: Colors.textPrimary,
   },
-  modalInfo: {
-    alignSelf: 'stretch',
-    gap: 6,
-    marginBottom: 20,
+  qrMetaSep: {
+    width: 1,
+    height: 24,
+    backgroundColor: Colors.border,
   },
-  modalInfoText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
+  qrBranding: {
+    alignItems: 'center',
   },
+  qrBrandingText: {
+    fontSize: 12,
+    color: Colors.textLight,
+    fontWeight: '500',
+  },
+  // Modal Buttons
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     alignSelf: 'stretch',
+    marginTop: 16,
   },
-  shareLinkButton: {
+  imageShareButton: {
     flex: 1,
     backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
-  shareLinkText: {
+  imageShareText: {
     color: Colors.white,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
-  closeButton: {
+  linkShareButton: {
     flex: 1,
-    borderWidth: 2,
-    borderColor: Colors.border,
+    backgroundColor: '#F3F4F6',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
-  closeButtonText: {
-    color: Colors.textSecondary,
-    fontSize: 15,
+  linkShareText: {
+    color: Colors.textPrimary,
+    fontSize: 14,
     fontWeight: '700',
+  },
+  closeButton: {
+    alignSelf: 'stretch',
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  closeButtonText: {
+    color: Colors.textLight,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

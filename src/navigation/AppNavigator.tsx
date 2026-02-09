@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { RouteProp } from '@react-navigation/native';
 import { Text } from 'react-native';
 import { Colors } from '../constants/colors';
 import { RootStackParamList, ProfileFlowParamList, MainTabParamList } from '../types';
@@ -22,16 +23,22 @@ import StyleDetailScreen from '../screens/StyleDetailScreen';
 import LegalScreen from '../screens/LegalScreen';
 import FAQScreen from '../screens/FAQScreen';
 import AllStylesScreen from '../screens/AllStylesScreen';
+import CompareStylesScreen from '../screens/CompareStylesScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileFlowParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // 프로필 생성 플로우
-function ProfileFlow() {
+function ProfileFlow({ route }: { route: RouteProp<RootStackParamList, 'ProfileFlow'> }) {
+  const mode = route.params?.mode || 'full';
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-      <ProfileStack.Screen name="Camera" component={CameraScreen} />
+      <ProfileStack.Screen
+        name="Camera"
+        component={CameraScreen}
+        initialParams={{ mode }}
+      />
       <ProfileStack.Screen name="Questions" component={QuestionsScreen} />
       <ProfileStack.Screen
         name="Analyzing"
@@ -151,6 +158,11 @@ export default function AppNavigator() {
               component={AllStylesScreen}
               options={{ presentation: 'modal' }}
             />
+            <Stack.Screen
+              name="CompareStyles"
+              component={CompareStylesScreen}
+              options={{ presentation: 'modal' }}
+            />
           </>
         ) : (
           // 로그인 + 프로필 없음 → 온보딩부터
@@ -181,6 +193,11 @@ export default function AppNavigator() {
             <Stack.Screen
               name="AllStyles"
               component={AllStylesScreen}
+              options={{ presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="CompareStyles"
+              component={CompareStylesScreen}
               options={{ presentation: 'modal' }}
             />
           </>

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import { ProfileFlowParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -22,6 +23,8 @@ type Props = {
 };
 
 export default function CameraScreen({ navigation }: Props) {
+  const route = useRoute<RouteProp<ProfileFlowParamList, 'Camera'>>();
+  const mode = route.params?.mode || 'full';
   const { user } = useAuth();
   const [photo, setPhoto] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -76,7 +79,11 @@ export default function CameraScreen({ navigation }: Props) {
         setUploading(false);
       }
     }
-    navigation.navigate('Questions', { storagePath });
+    if (mode === 'photoOnly') {
+      navigation.navigate('Analyzing', { storagePath, photoOnly: true });
+    } else {
+      navigation.navigate('Questions', { storagePath });
+    }
   };
 
   return (

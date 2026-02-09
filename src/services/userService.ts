@@ -112,6 +112,25 @@ export async function toggleSavedStyle(userId: string, styleId: string) {
   return false;
 }
 
+// 얼굴 분석 결과만 업데이트 (사진만 다시 찍기 모드)
+export async function updateFaceAnalysis(
+  userId: string,
+  faceShape: string,
+  faceAnalysis: FaceAnalysisResult,
+  facePhotoURL?: string
+) {
+  const userRef = doc(db, 'users', userId);
+  const updateData: Record<string, any> = {
+    faceShape,
+    faceAnalysis: { ...faceAnalysis, analyzedAt: serverTimestamp() },
+    updatedAt: serverTimestamp(),
+  };
+  if (facePhotoURL) {
+    updateData.facePhotoURL = facePhotoURL;
+  }
+  await updateDoc(userRef, updateData);
+}
+
 // 프로필 존재 여부 확인
 export async function hasProfile(userId: string): Promise<boolean> {
   const userRef = doc(db, 'users', userId);

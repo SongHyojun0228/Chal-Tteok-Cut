@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,9 +22,31 @@ type CategoryType = '전체' | '숏컷' | '단발' | '중단발' | '미디엄' |
 const GENDER_FILTERS: FilterType[] = ['전체', '여성', '남성'];
 const CATEGORY_FILTERS: CategoryType[] = ['전체', '숏컷', '단발', '중단발', '미디엄', '긴머리'];
 
-function MiniStyleCard({ item, onPress }: { item: StyleData; onPress: () => void }) {
+function MiniStyleCard({
+  item,
+  onPress,
+  compareMode,
+  isSelected,
+  onToggleSelect,
+}: {
+  item: StyleData;
+  onPress: () => void;
+  compareMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: () => void;
+}) {
   return (
-    <TouchableOpacity style={styles.miniCard} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={[styles.miniCard, isSelected && styles.miniCardSelected]}
+      onPress={compareMode ? onToggleSelect : onPress}
+      activeOpacity={0.7}
+    >
+      {/* 비교 모드 체크 표시 */}
+      {compareMode && (
+        <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+          {isSelected && <Text style={styles.checkMark}>✓</Text>}
+        </View>
+      )}
       <View style={styles.miniImageArea}>
         {styleImages[item.id] ? (
           <Image source={styleImages[item.id]} style={styles.miniImage} resizeMode="cover" />
@@ -46,7 +69,7 @@ function MiniStyleCard({ item, onPress }: { item: StyleData; onPress: () => void
           </Text>
         </View>
       </View>
-      <Text style={styles.miniArrow}>›</Text>
+      {!compareMode && <Text style={styles.miniArrow}>›</Text>}
     </TouchableOpacity>
   );
 }
@@ -55,6 +78,8 @@ export default function AllStylesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [genderFilter, setGenderFilter] = useState<FilterType>('전체');
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>('전체');
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const filteredStyles = useMemo(() => {
     return mockStyles.filter((s) => {
@@ -76,6 +101,33 @@ export default function AllStylesScreen() {
     return CATEGORY_FILTERS.filter((c) => c === '전체' || cats.has(c));
   }, [genderFilter]);
 
+  const toggleSelect = (id: string) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter((sid) => sid !== id));
+    } else {
+      if (selectedIds.length >= 3) {
+        Alert.alert('최대 3개', '비교는 최대 3개까지 가능해요.');
+        return;
+      }
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const handleCompare = () => {
+    if (selectedIds.length < 2) {
+      Alert.alert('알림', '2개 이상 선택해주세요.');
+      return;
+    }
+    navigation.navigate('CompareStyles', { styleIds: selectedIds });
+  };
+
+  const toggleCompareMode = () => {
+    if (compareMode) {
+      setSelectedIds([]);
+    }
+    setCompareMode(!compareMode);
+  };
+
   return (
     <View style={styles.container}>
       {/* 헤더 */}
@@ -83,8 +135,20 @@ export default function AllStylesScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backText}>← 뒤로</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>전체 스타일</Text>
-        <Text style={styles.subtitle}>{filteredStyles.length}개의 스타일</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>전체 스타일</Text>
+            <Text style={styles.subtitle}>{filteredStyles.length}개의 스타일</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.compareToggle, compareMode && styles.compareToggleActive]}
+            onPress={toggleCompareMode}
+          >
+            <Text style={[styles.compareToggleText, compareMode && styles.compareToggleTextActive]}>
+              ⚖️ 비교
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 성별 필터 */}
@@ -127,13 +191,16 @@ export default function AllStylesScreen() {
         data={filteredStyles}
         keyExtractor={(item) => item.id}
         style={styles.list}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, compareMode && selectedIds.length >= 2 && { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
         initialNumToRender={10}
         renderItem={({ item }) => (
           <MiniStyleCard
             item={item}
             onPress={() => navigation.navigate('StyleDetail', { styleId: item.id })}
+            compareMode={compareMode}
+            isSelected={selectedIds.includes(item.id)}
+            onToggleSelect={() => toggleSelect(item.id)}
           />
         )}
         ListEmptyComponent={
@@ -143,6 +210,15 @@ export default function AllStylesScreen() {
           </View>
         }
       />
+
+      {/* 플로팅 비교 버튼 */}
+      {compareMode && selectedIds.length >= 2 && (
+        <TouchableOpacity style={styles.floatingCompareButton} onPress={handleCompare} activeOpacity={0.9}>
+          <Text style={styles.floatingCompareText}>
+            {selectedIds.length}개 스타일 비교하기
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -168,6 +244,14 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerLeft: {
+    flex: 1,
+  },
   title: {
     fontSize: 22,
     fontWeight: '800',
@@ -177,6 +261,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textLight,
     marginTop: 4,
+  },
+  compareToggle: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  compareToggleActive: {
+    borderColor: Colors.primary,
+    backgroundColor: '#FFF1F2',
+  },
+  compareToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  compareToggleTextActive: {
+    color: Colors.primary,
   },
   filterSection: {
     backgroundColor: Colors.white,
@@ -243,6 +347,30 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  miniCardSelected: {
+    borderColor: Colors.primary,
+    borderWidth: 2,
+    backgroundColor: '#FFF8F8',
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkCircleSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
+  },
+  checkMark: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '700',
   },
   miniImageArea: {
     width: 56,
@@ -324,5 +452,26 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     color: Colors.textLight,
+  },
+  // 플로팅 비교 버튼
+  floatingCompareButton: {
+    position: 'absolute',
+    bottom: 36,
+    left: 24,
+    right: 24,
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  floatingCompareText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
