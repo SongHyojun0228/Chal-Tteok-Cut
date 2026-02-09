@@ -68,6 +68,8 @@ function classifyFaceShape(landmarks: Array<{x: number; y: number}>): FaceAnalys
   const leftBrowMid = lm["LEFT_EYEBROW_UPPER_MIDPOINT"];
   const rightBrowMid = lm["RIGHT_EYEBROW_UPPER_MIDPOINT"];
   const noseBottom = lm["NOSE_BOTTOM_CENTER"];
+  const mouthLeft = lm["MOUTH_LEFT"];
+  const mouthRight = lm["MOUTH_RIGHT"];
 
   const dist = (a: {x:number;y:number}, b: {x:number;y:number}) =>
     Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
@@ -117,6 +119,10 @@ function classifyFaceShape(landmarks: Array<{x: number; y: number}>): FaceAnalys
   const foreheadToJawRatio = foreheadWidthVal / jawWidthVal;
   const cheekToJawRatio = cheekboneWidth / jawWidthVal;
 
+  // 입 너비 / 얼굴 너비
+  const mouthWidth = (mouthLeft && mouthRight) ? dist(mouthLeft, mouthRight) : 0;
+  const mouthToFaceRatio = mouthWidth > 0 ? mouthWidth / faceWidth : 0;
+
   // 얼굴 3등분 계산 (보정된 상안부 사용)
   let upperThird = 33, middleThird = 33, lowerThird = 33;
   if (middleDist > 0 && lowerDist > 0) {
@@ -159,29 +165,61 @@ function classifyFaceShape(landmarks: Array<{x: number; y: number}>): FaceAnalys
   const lowerFaceLength: "short" | "medium" | "long" =
     lowerThird < 28 ? "short" : lowerThird > 38 ? "long" : "medium";
 
-  // ===== 얼굴형 분류 =====
+  // ===== 얼굴형 분류 (Priority Rule v2 - 캘리브레이션 최적화) =====
   let faceShape: FaceShape;
   let confidence: number;
 
-  if (widthToHeightRatio > 0.85) {
-    if (jawToFaceRatio > 0.75) {
-      faceShape = "square";
-      confidence = 0.7 + (jawToFaceRatio - 0.75) * 2;
-    } else {
-      faceShape = "round";
-      confidence = 0.7 + (widthToHeightRatio - 0.85) * 2;
-    }
-  } else if (widthToHeightRatio < 0.7) {
+  // Rule 1: 턱이 매우 넓고 각도 큼 → 각진형
+  if (jawToFaceRatio >= 0.82 && avgJawAngle >= 30) {
+    faceShape = "square";
+    confidence = 0.70;
+  }
+  // Rule 2: 턱이 매우 넓고 각도 작음 → 긴형
+  else if (jawToFaceRatio >= 0.82 && avgJawAngle < 30) {
     faceShape = "oblong";
-    confidence = 0.7 + (0.7 - widthToHeightRatio) * 2;
-  } else {
-    if (foreheadToJawRatio > 1.2) {
-      faceShape = "heart";
-      confidence = 0.7 + (foreheadToJawRatio - 1.2) * 1.5;
-    } else {
-      faceShape = "oval";
-      confidence = 0.75;
-    }
+    confidence = 0.70;
+  }
+  // Rule 3: 턱 넓고 이마/턱 낮고 각도 작음 → 각진형
+  else if (jawToFaceRatio >= 0.81 && foreheadToJawRatio < 0.90 && avgJawAngle <= 31) {
+    faceShape = "square";
+    confidence = 0.65;
+  }
+  // Rule 4: 턱각도 매우 작고 턱 넓음 → 긴형
+  else if (avgJawAngle < 24 && jawToFaceRatio >= 0.77) {
+    faceShape = "oblong";
+    confidence = 0.65;
+  }
+  // Rule 5: 턱 꽤 넓고 각도 작고 이마/턱 비율 낮음 → 긴형
+  else if (jawToFaceRatio >= 0.79 && avgJawAngle < 30 && foreheadToJawRatio < 0.92) {
+    faceShape = "oblong";
+    confidence = 0.60;
+  }
+  // Rule 6: 이마/턱 비율 매우 높음 → 둥근형
+  else if (foreheadToJawRatio > 1.05) {
+    faceShape = "round";
+    confidence = 0.65;
+  }
+  // Rule 7: 이마/턱 비율 높고 턱 좁고 입 좁음 → 역삼각형
+  else if (foreheadToJawRatio > 1.02 && jawToFaceRatio < 0.76 &&
+           mouthToFaceRatio > 0 && mouthToFaceRatio < 0.32) {
+    faceShape = "heart";
+    confidence = 0.65;
+  }
+  // Rule 8: 이마/턱 낮고 입 좁음 → 역삼각형
+  else if (foreheadToJawRatio < 0.93 && mouthToFaceRatio > 0 && mouthToFaceRatio < 0.32) {
+    faceShape = "heart";
+    confidence = 0.60;
+  }
+  // Rule 9: 이마/턱 비율 높고 턱 중간 너비이고 각도 중간 → 둥근형
+  else if (foreheadToJawRatio >= 0.98 && jawToFaceRatio >= 0.76 &&
+           jawToFaceRatio <= 0.78 && avgJawAngle >= 30 && avgJawAngle < 35.5) {
+    faceShape = "round";
+    confidence = 0.60;
+  }
+  // Rule 10: 기본값 → 계란형
+  else {
+    faceShape = "oval";
+    confidence = 0.65;
   }
   confidence = Math.min(confidence, 0.95);
 
