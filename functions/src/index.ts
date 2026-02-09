@@ -89,7 +89,20 @@ function classifyFaceShape(landmarks: Array<{x: number; y: number}>): FaceAnalys
   }
 
   // ===== 측정값 계산 =====
-  const faceHeight = dist(forehead, chin);
+  // FOREHEAD_GLABELLA는 미간(눈썹 사이)이므로, 실제 이마 꼭대기를 추정해야 함
+  // 중안부(눈썹~코끝)와 비슷한 길이를 상안부로 추정
+  const browMidY = (leftBrowMid && rightBrowMid)
+    ? (leftBrowMid.y + rightBrowMid.y) / 2
+    : forehead.y;
+  const middleDist = noseBottom ? Math.abs(noseBottom.y - browMidY) : 0;
+  const lowerDist = noseBottom ? Math.abs(chin.y - noseBottom.y) : 0;
+
+  // 상안부 추정: 이마 꼭대기 = 눈썹 위로 중안부의 ~85% 거리
+  const estimatedUpperDist = middleDist > 0 ? middleDist * 0.85 : Math.abs(browMidY - forehead.y);
+  const estimatedForeheadTop = { x: forehead.x, y: browMidY - estimatedUpperDist };
+
+  // 보정된 얼굴 높이 (추정 이마 꼭대기 ~ 턱끝)
+  const faceHeight = Math.abs(chin.y - estimatedForeheadTop.y);
   const faceWidth = dist(leftEar, rightEar);
   const jawWidthVal = dist(leftJaw, rightJaw);
   const foreheadWidthVal = leftBrow && rightBrow ? dist(leftBrow, rightBrow) : faceWidth * 0.8;
@@ -104,16 +117,12 @@ function classifyFaceShape(landmarks: Array<{x: number; y: number}>): FaceAnalys
   const foreheadToJawRatio = foreheadWidthVal / jawWidthVal;
   const cheekToJawRatio = cheekboneWidth / jawWidthVal;
 
-  // 얼굴 3등분 계산
+  // 얼굴 3등분 계산 (보정된 상안부 사용)
   let upperThird = 33, middleThird = 33, lowerThird = 33;
-  if (leftBrowMid && rightBrowMid && noseBottom) {
-    const browMidY = (leftBrowMid.y + rightBrowMid.y) / 2;
-    const upperDist = Math.abs(browMidY - forehead.y);
-    const middleDist = Math.abs(noseBottom.y - browMidY);
-    const lowerDist = Math.abs(chin.y - noseBottom.y);
-    const totalDist = upperDist + middleDist + lowerDist;
+  if (middleDist > 0 && lowerDist > 0) {
+    const totalDist = estimatedUpperDist + middleDist + lowerDist;
     if (totalDist > 0) {
-      upperThird = Math.round((upperDist / totalDist) * 100);
+      upperThird = Math.round((estimatedUpperDist / totalDist) * 100);
       middleThird = Math.round((middleDist / totalDist) * 100);
       lowerThird = Math.round((lowerDist / totalDist) * 100);
     }
