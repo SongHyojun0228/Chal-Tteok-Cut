@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>찰떡컷 - AI 헤어스타일 추천</title>
+  <meta name="description" content="AI가 얼굴형과 모질을 분석해서 찰떡같이 어울리는 헤어스타일을 추천해드려요. 3분이면 나만의 스타일을 찾을 수 있어요.">
+  <meta name="theme-color" content="#FF6B6B">
+  <meta property="og:title" content="찰떡컷 - AI 헤어스타일 추천">
+  <meta property="og:description" content="얼굴형/모질/두상 분석으로 나에게 딱 맞는 헤어스타일을 찾아보세요">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://chaltteok-cut.web.app/landing.html">
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #FFFBF7;
+      color: #1a1a2e;
+      overflow-x: hidden;
+    }
+
+    /* Hero */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px 40px;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -120px;
+      right: -120px;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255,107,107,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .hero-emoji {
+      font-size: 80px;
+      margin-bottom: 24px;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    .hero-title {
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+
+    .hero-title .accent {
+      color: #FF6B6B;
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: #6B7280;
+      line-height: 1.6;
+      margin-bottom: 40px;
+      max-width: 400px;
+    }
+
+    .hero-cta {
+      display: inline-block;
+      background: #FF6B6B;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 18px 48px;
+      border-radius: 16px;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(255,107,107,0.3);
+    }
+
+    .hero-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(255,107,107,0.4);
+    }
+
+    .hero-note {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #9CA3AF;
+    }
+
+    /* Stats */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 48px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: 800;
+      color: #FF6B6B;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #6B7280;
+      margin-top: 4px;
+    }
+
+    /* Section */
+    section {
+      padding: 80px 24px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #FF6B6B;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 32px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 48px;
+      line-height: 1.3;
+    }
+
+    /* How it works */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+    }
+
+    .step {
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      border: 1px solid #F3F4F6;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .step:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: #FF6B6B;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .step-emoji {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .step-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: #6B7280;
+      line-height: 1.6;
+    }
+
+    /* Features */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .feature {
+      background: #fff;
+      border-radius: 20px;
+      padding: 28px;
+      border: 1px solid #F3F4F6;
+    }
+
+    .feature-emoji {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    .feature-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .feature-desc {
+      font-size: 14px;
+      color: #6B7280;
+      line-height: 1.7;
+    }
+
+    /* Install */
+    .install-section {
+      background: #fff;
+      border-radius: 24px;
+      padding: 48px 32px;
+      max-width: 640px;
+      margin: 0 auto;
+      border: 1px solid #F3F4F6;
+    }
+
+    .install-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .install-tab {
+      padding: 10px 24px;
+      border-radius: 12px;
+      border: none;
+      background: #F3F4F6;
+      font-size: 15px;
+      font-weight: 600;
+      color: #6B7280;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .install-tab.active {
+      background: #FF6B6B;
+      color: #fff;
+    }
+
+    .install-content {
+      display: none;
+    }
+
+    .install-content.active {
+      display: block;
+    }
+
+    .install-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .install-step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      background: #FFF1F2;
+      color: #FF6B6B;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .install-step-text {
+      font-size: 15px;
+      color: #374151;
+      line-height: 1.6;
+      padding-top: 3px;
+    }
+
+    .install-step-text strong {
+      color: #1a1a2e;
+    }
+
+    .install-note {
+      background: #FFF7ED;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: #92400E;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* CTA */
+    .cta-section {
+      text-align: center;
+      padding: 80px 24px 100px;
+    }
+
+    .cta-title {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .cta-desc {
+      font-size: 16px;
+      color: #6B7280;
+      margin-bottom: 32px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 32px 24px;
+      border-top: 1px solid #F3F4F6;
+      font-size: 13px;
+      color: #9CA3AF;
+    }
+
+    footer a {
+      color: #FF6B6B;
+      text-decoration: none;
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .hero-title { font-size: 32px; }
+      .section-title { font-size: 24px; }
+      .stats { gap: 24px; }
+      .stat-number { font-size: 24px; }
+      .install-section { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-emoji">✂️</div>
+    <h1 class="hero-title">
+      <span class="accent">찰떡</span>같이<br>어울리는 헤어컷
+    </h1>
+    <p class="hero-subtitle">
+      AI가 얼굴형과 모질을 분석해서<br>
+      나에게 딱 맞는 헤어스타일을 추천해드려요
+    </p>
+    <a href="/" class="hero-cta">무료로 시작하기</a>
+    <p class="hero-note">회원가입 후 3분이면 추천받을 수 있어요</p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-number">58+</div>
+        <div class="stat-label">스타일 DB</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">5가지</div>
+        <div class="stat-label">얼굴형 분석</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">3분</div>
+        <div class="stat-label">분석 소요시간</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <section>
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">3단계로 끝나는 스타일 추천</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <span class="step-emoji">📸</span>
+        <div class="step-title">사진 촬영</div>
+        <div class="step-desc">정면 사진 한 장이면 충분해요.<br>갤러리에서 선택해도 OK!</div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <span class="step-emoji">📝</span>
+        <div class="step-title">간단한 질문</div>
+        <div class="step-desc">모질, 모량, 선호 스타일 등<br>6개 질문에 답해주세요</div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <span class="step-emoji">✨</span>
+        <div class="step-title">맞춤 추천</div>
+        <div class="step-desc">AI가 분석한 나만의<br>Top 스타일을 확인하세요</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section>
+    <div class="section-label">Features</div>
+    <h2 class="section-title">이런 기능이 있어요</h2>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-emoji">🧠</div>
+        <div class="feature-title">AI 얼굴형 분석</div>
+        <div class="feature-desc">Google Vision AI가 32개 포인트로 얼굴을 분석해요. 이마, 광대, 턱선, 얼굴 비율까지 정밀 측정!</div>
+      </div>
+      <div class="feature">
+        <div class="feature-emoji">⚖️</div>
+        <div class="feature-title">스타일 비교</div>
+        <div class="feature-desc">마음에 드는 스타일 2~3개를 골라 나란히 비교해보세요. 난이도, 가격, 매칭 점수를 한눈에!</div>
+      </div>
+      <div class="feature">
+        <div class="feature-emoji">📱</div>
+        <div class="feature-title">QR 공유</div>
+        <div class="feature-desc">추천받은 스타일을 QR 카드로 만들어 미용사에게 바로 보여주세요. 상담 시간 절약!</div>
+      </div>
+      <div class="feature">
+        <div class="feature-emoji">🔄</div>
+        <div class="feature-title">간편 재분석</div>
+        <div class="feature-desc">사진만 다시 찍거나, 전체를 다시 분석할 수 있어요. 헤어 바꿀 때마다 새로운 추천!</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Install Guide -->
+  <section>
+    <div class="section-label">Install</div>
+    <h2 class="section-title">📲 앱으로 설치하기</h2>
+    <div class="install-section">
+      <div class="install-tabs">
+        <button class="install-tab active" onclick="showTab('ios')">iPhone</button>
+        <button class="install-tab" onclick="showTab('android')">Android</button>
+        <button class="install-tab" onclick="showTab('pc')">PC</button>
+      </div>
+
+      <div id="tab-ios" class="install-content active">
+        <div class="install-step">
+          <div class="install-step-num">1</div>
+          <div class="install-step-text"><strong>Safari</strong>로 <a href="/">chaltteok-cut.web.app</a> 접속</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">2</div>
+          <div class="install-step-text">하단 <strong>공유 버튼</strong> (□↑ 모양) 탭</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">3</div>
+          <div class="install-step-text"><strong>"홈 화면에 추가"</strong> 선택</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">4</div>
+          <div class="install-step-text"><strong>"추가"</strong> 탭하면 완료!</div>
+        </div>
+        <div class="install-note">⚠️ 반드시 <strong>Safari</strong>에서 해야 해요. 카카오톡이나 Chrome 인앱 브라우저에서는 안 돼요!</div>
+      </div>
+
+      <div id="tab-android" class="install-content">
+        <div class="install-step">
+          <div class="install-step-num">1</div>
+          <div class="install-step-text"><strong>Chrome</strong>으로 <a href="/">chaltteok-cut.web.app</a> 접속</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">2</div>
+          <div class="install-step-text">우측 상단 <strong>점 세개 메뉴(⋮)</strong> 탭</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">3</div>
+          <div class="install-step-text"><strong>"홈 화면에 추가"</strong> 또는 <strong>"앱 설치"</strong> 선택</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">4</div>
+          <div class="install-step-text"><strong>"추가"</strong> 탭하면 완료!</div>
+        </div>
+      </div>
+
+      <div id="tab-pc" class="install-content">
+        <div class="install-step">
+          <div class="install-step-num">1</div>
+          <div class="install-step-text"><strong>Chrome</strong> 또는 <strong>Edge</strong>로 <a href="/">chaltteok-cut.web.app</a> 접속</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">2</div>
+          <div class="install-step-text">주소창 오른쪽 <strong>설치 아이콘</strong> (모니터+화살표) 클릭</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">3</div>
+          <div class="install-step-text"><strong>"설치"</strong> 클릭하면 독립 앱 창으로 실행!</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <h2 class="cta-title">지금 바로 시작해보세요</h2>
+    <p class="cta-desc">무료로 나에게 어울리는 스타일을 찾아보세요</p>
+    <a href="/" class="hero-cta">찰떡컷 시작하기</a>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>✂️ 찰떡컷 | <a href="https://github.com/SongHyojun0228/Chal-Tteok-Cut" target="_blank">GitHub</a></p>
+    <p style="margin-top: 8px;">Made with Claude</p>
+  </footer>
+
+  <script>
+    function showTab(tab) {
+      document.querySelectorAll('.install-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.install-tab').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>
