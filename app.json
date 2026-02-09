@@ -33,7 +33,15 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "찰떡컷",
+      "shortName": "찰떡컷",
+      "description": "AI 기반 헤어스타일 추천 앱 - 두상·얼굴형·모질 분석으로 나에게 딱 맞는 스타일을 찾아드립니다",
+      "lang": "ko",
+      "themeColor": "#FF6B6B",
+      "backgroundColor": "#FFFBF7"
     },
     "plugins": [
       "expo-font",
