@@ -2,6 +2,8 @@ import { StyleData } from '../constants/mockStyles';
 import { FaceDetails } from './faceAnalysisService';
 import { UserProfile } from './userService';
 import { FaceShape } from '../types';
+import { styleHeadShapeData } from '../constants/headShapeData';
+import { styleHairTypeData } from '../constants/hairTypeData';
 
 interface ScoredStyle extends StyleData {
   matchScore: number;
@@ -12,10 +14,11 @@ interface ScoredStyle extends StyleData {
  * 사용자 프로필 + 얼굴 분석 데이터 기반으로 스타일 매칭 점수를 계산합니다.
  *
  * 점수 구성 (100점 만점):
- * - 얼굴형 매칭: 30점
- * - 모질 매칭: 20점
- * - 모량 매칭: 15점
- * - 얼굴 세부 특징 매칭: 20점
+ * - 얼굴형 매칭: 25점
+ * - 모질 매칭: 15점
+ * - 모량 매칭: 10점
+ * - 얼굴 세부 특징 매칭: 15점
+ * - 두상 매칭: 20점 (뒷통수 7 + 정수리 7 + 머리크기 6)
  * - 관리 시간 선호 매칭: 10점
  * - 스타일 선호 매칭: 5점
  */
@@ -28,57 +31,50 @@ export function calculateMatchScore(
   let score = 0;
   const reasons: string[] = [];
 
-  // 1. 얼굴형 매칭 (30점)
+  // 1. 얼굴형 매칭 (25점)
   if (faceShape && style.faceShapes.includes(faceShape)) {
-    score += 30;
+    score += 25;
     reasons.push('얼굴형에 잘 어울려요');
   } else if (faceShape) {
-    score += 10; // 기본 점수
+    score += 8;
   } else {
-    score += 15; // 얼굴형 데이터 없으면 중간
+    score += 12;
   }
 
-  // 2. 모질 매칭 (20점)
-  if (style.hairTypes && profile.hairType) {
-    const hairTypeMap: Record<string, string> = {
-      straight: 'straight',
-      wavy: 'wavy',
-      curly: 'curly',
-    };
-    const userHairType = hairTypeMap[profile.hairType];
-    if (userHairType && style.hairTypes.includes(userHairType as any)) {
-      score += 20;
-      reasons.push('모질에 적합한 스타일이에요');
-    } else if (userHairType) {
-      score += 5;
+  // 2. 모질 매칭 (15점) - hairTypeData 우선 사용
+  const htData = styleHairTypeData[style.id];
+  if (profile.hairType && profile.hairType !== 'unknown') {
+    const userHT = profile.hairType as 'straight' | 'wavy' | 'curly';
+    const suitableTypes = htData?.suitableHairTypes || style.hairTypes || [];
+    if (suitableTypes.includes(userHT)) {
+      score += htData?.bestHairType === userHT ? 15 : 12;
+      if (htData?.bestHairType === userHT) {
+        reasons.push('베스트 모질에 딱 맞아요');
+      } else {
+        reasons.push('모질에 적합한 스타일이에요');
+      }
     } else {
-      score += 10; // unknown
-    }
-  } else {
-    score += 10;
-  }
-
-  // 3. 모량 매칭 (15점)
-  if (style.hairAmounts && profile.hairAmount) {
-    const amountMap: Record<string, string> = {
-      thin: 'thin',
-      medium: 'medium',
-      thick: 'thick',
-    };
-    const userAmount = amountMap[profile.hairAmount];
-    if (userAmount && style.hairAmounts.includes(userAmount as any)) {
-      score += 15;
-      reasons.push('모량에 맞는 스타일이에요');
-    } else if (userAmount) {
       score += 3;
-    } else {
-      score += 8; // unknown
     }
   } else {
     score += 8;
   }
 
-  // 4. 얼굴 세부 특징 매칭 (20점)
+  // 3. 모량 매칭 (10점) - hairTypeData 우선 사용
+  if (profile.hairAmount && profile.hairAmount !== 'unknown') {
+    const userHA = profile.hairAmount as 'thin' | 'medium' | 'thick';
+    const suitableAmounts = htData?.suitableHairAmounts || style.hairAmounts || [];
+    if (suitableAmounts.includes(userHA)) {
+      score += 10;
+      reasons.push('모량에 맞는 스타일이에요');
+    } else {
+      score += 2;
+    }
+  } else {
+    score += 5;
+  }
+
+  // 4. 얼굴 세부 특징 매칭 (15점)
   if (faceDetails && style.bestFor) {
     let featureMatches = 0;
     let totalFeatures = 0;
@@ -109,19 +105,64 @@ export function calculateMatchScore(
     }
 
     if (totalFeatures > 0) {
-      const featureScore = Math.round((featureMatches / totalFeatures) * 20);
+      const featureScore = Math.round((featureMatches / totalFeatures) * 15);
       score += featureScore;
       if (featureMatches > 0) {
         reasons.push('얼굴 특징에 맞춤 추천');
       }
     } else {
-      score += 10;
+      score += 8;
+    }
+  } else {
+    score += 8;
+  }
+
+  // 5. 두상 매칭 (20점: 뒷통수 7 + 정수리 7 + 머리크기 6)
+  const headData = styleHeadShapeData[style.id];
+  if (headData) {
+    const hs = headData.suitableHeadShapes;
+    let headScore = 0;
+    let headMatches = 0;
+
+    // 뒷통수 (7점)
+    if (profile.backHeadShape && profile.backHeadShape !== 'unknown') {
+      if (hs.backHeadShape.includes(profile.backHeadShape as any)) {
+        headScore += 7;
+        headMatches++;
+      }
+    } else {
+      headScore += 3;
+    }
+
+    // 정수리 (7점)
+    if (profile.crownHeight && profile.crownHeight !== 'unknown') {
+      if (hs.crownHeight.includes(profile.crownHeight as any)) {
+        headScore += 7;
+        headMatches++;
+      }
+    } else {
+      headScore += 3;
+    }
+
+    // 머리 크기 (6점)
+    if (profile.headSize && profile.headSize !== 'unknown') {
+      if (hs.headSize.includes(profile.headSize as any)) {
+        headScore += 6;
+        headMatches++;
+      }
+    } else {
+      headScore += 3;
+    }
+
+    score += headScore;
+    if (headMatches >= 2) {
+      reasons.push('두상에 잘 어울려요');
     }
   } else {
     score += 10;
   }
 
-  // 5. 관리 시간 매칭 (10점)
+  // 6. 관리 시간 매칭 (10점)
   if (profile.stylingTime) {
     const timeMap: Record<string, number> = {
       under_5: 5,
@@ -136,18 +177,17 @@ export function calculateMatchScore(
           reasons.push('빠른 스타일링이 가능해요');
         }
       } else {
-        // 관리 시간 초과 시 감점
         const overTime = style.maintenanceTime - userTime;
         score += Math.max(0, 10 - overTime);
       }
     } else {
-      score += 5; // unknown
+      score += 5;
     }
   } else {
     score += 5;
   }
 
-  // 6. 스타일 선호 매칭 (5점)
+  // 7. 스타일 선호 매칭 (5점)
   if (profile.stylePref) {
     const prefTagMap: Record<string, string[]> = {
       natural: ['자연스러운', '부드러운', '편한'],
@@ -164,7 +204,6 @@ export function calculateMatchScore(
   // 점수 범위 조정 (60~99)
   const finalScore = Math.min(99, Math.max(60, Math.round(score)));
 
-  // 추천 이유가 없으면 기본 이유
   if (reasons.length === 0) {
     reasons.push('인기 스타일이에요');
   }

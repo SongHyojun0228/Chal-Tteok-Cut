@@ -97,6 +97,39 @@ const hairLengthFemale: Question = {
   ],
 };
 
+// 두상 관련 질문
+const headShapeQuestions: Question[] = [
+  {
+    id: 'back_head',
+    title: '뒷통수가 어떤가요?',
+    subtitle: '옆에서 봤을 때 뒷머리 형태를 알려주세요',
+    options: [
+      { label: '둥글고 볼록함', value: 'round', emoji: '🟠' },
+      { label: '평평함 (절벽)', value: 'flat', emoji: '📐' },
+    ],
+  },
+  {
+    id: 'crown_height',
+    title: '정수리 높이는요?',
+    subtitle: '정면에서 봤을 때 머리 윗부분',
+    options: [
+      { label: '높은 편', value: 'high', emoji: '⬆️' },
+      { label: '보통', value: 'medium', emoji: '➡️' },
+      { label: '낮은 편 (납작)', value: 'low', emoji: '⬇️' },
+    ],
+  },
+  {
+    id: 'head_size',
+    title: '머리 크기는 어떤가요?',
+    subtitle: '모자 쓸 때 기준으로',
+    options: [
+      { label: '작은 편', value: 'small', emoji: '🧢' },
+      { label: '보통', value: 'medium', emoji: '👌' },
+      { label: '큰 편', value: 'large', emoji: '🎩' },
+    ],
+  },
+];
+
 // 나머지 공통 질문
 const lastQuestions: Question[] = [
   {
@@ -132,7 +165,7 @@ export default function QuestionsScreen({ navigation }: Props) {
   const questions = useMemo(() => {
     const gender = answers['gender'];
     const hairLength = gender === 'male' ? hairLengthMale : hairLengthFemale;
-    return [genderQuestion, ...commonQuestions, hairLength, ...lastQuestions];
+    return [genderQuestion, ...commonQuestions, hairLength, ...headShapeQuestions, ...lastQuestions];
   }, [answers['gender']]);
 
   const question = questions[currentQ];

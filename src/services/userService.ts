@@ -10,6 +10,9 @@ export type UserProfile = {
   hairLength: string;
   stylingTime: string;
   stylePref: string;
+  backHeadShape?: string;
+  crownHeight?: string;
+  headSize?: string;
   faceShape?: string;
   facePhotoURL?: string;
   faceAnalysis?: FaceAnalysisResult & { analyzedAt?: any };
@@ -30,6 +33,9 @@ export const answerLabels: Record<string, Record<string, string>> = {
   },
   styling_time: { under_5: '5분 이하', about_10: '10분 정도', over_20: '20분 이상', unknown: '모르겠어요' },
   style_pref: { natural: '자연스러운', trendy: '트렌디한', unique: '개성있는', unknown: '모르겠어요' },
+  back_head: { round: '둥근 뒷통수', flat: '절벽 (평평)', unknown: '모르겠어요' },
+  crown_height: { high: '높은 편', medium: '보통', low: '낮은 편', unknown: '모르겠어요' },
+  head_size: { small: '작은 편', medium: '보통', large: '큰 편', unknown: '모르겠어요' },
 };
 
 // 프로필 저장
@@ -42,6 +48,9 @@ export async function saveUserProfile(userId: string, answers: Record<string, st
     hairLength: answers.hair_length || '',
     stylingTime: answers.styling_time || '',
     stylePref: answers.style_pref || '',
+    backHeadShape: answers.back_head || '',
+    crownHeight: answers.crown_height || '',
+    headSize: answers.head_size || '',
     faceShape: 'unknown', // TODO: AI 분석 후 업데이트
     savedStyles: [],
     updatedAt: serverTimestamp(),

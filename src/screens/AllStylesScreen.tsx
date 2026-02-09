@@ -6,12 +6,14 @@ import {
   FlatList,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '../constants/colors';
 import { RootStackParamList } from '../types';
 import { mockStyles, StyleData } from '../constants/mockStyles';
+import styleImages from '../constants/styleImages';
 
 type FilterType = '전체' | '여성' | '남성';
 type CategoryType = '전체' | '숏컷' | '단발' | '중단발' | '미디엄' | '긴머리';
@@ -23,7 +25,11 @@ function MiniStyleCard({ item, onPress }: { item: StyleData; onPress: () => void
   return (
     <TouchableOpacity style={styles.miniCard} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.miniImageArea}>
-        <Text style={styles.miniEmoji}>💇</Text>
+        {styleImages[item.id] ? (
+          <Image source={styleImages[item.id]} style={styles.miniImage} resizeMode="cover" />
+        ) : (
+          <Text style={styles.miniEmoji}>💇</Text>
+        )}
       </View>
       <View style={styles.miniInfo}>
         <View style={styles.miniHeader}>
@@ -246,6 +252,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
+    overflow: 'hidden',
+  },
+  miniImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 56,
+    height: 90,
   },
   miniEmoji: {
     fontSize: 28,

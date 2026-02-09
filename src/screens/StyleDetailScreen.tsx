@@ -9,12 +9,16 @@ import {
   Modal,
   Share,
   Animated,
+  Image,
 } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import QRCode from 'react-native-qrcode-svg';
 import { Colors } from '../constants/colors';
 import { RootStackParamList } from '../types';
 import { mockStyles } from '../constants/mockStyles';
+import styleImages from '../constants/styleImages';
+import { styleHeadShapeData, headShapeLabels } from '../constants/headShapeData';
+import { styleHairTypeData, hairTypeLabels, hairAmountLabels } from '../constants/hairTypeData';
 import { useAuth } from '../contexts/AuthContext';
 import { toggleSavedStyle, getUserProfile } from '../services/userService';
 import { faceShapeNames } from '../services/faceAnalysisService';
@@ -116,7 +120,11 @@ export default function StyleDetailScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* 이미지 영역 */}
       <View style={styles.imageArea}>
-        <Text style={styles.imagePlaceholder}>💇</Text>
+        {styleImages[item.id] ? (
+          <Image source={styleImages[item.id]} style={styles.detailImage} resizeMode="cover" />
+        ) : (
+          <Text style={styles.imagePlaceholder}>💇</Text>
+        )}
         <View style={styles.scoreBadge}>
           <Text style={styles.scoreText}>⭐ {item.matchScore}% 매칭</Text>
         </View>
@@ -181,6 +189,81 @@ export default function StyleDetailScreen() {
           ))}
         </View>
       </View>
+
+      {/* 어울리는 두상 */}
+      {styleHeadShapeData[item.id] && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🧠 어울리는 두상</Text>
+          <View style={styles.headShapeBox}>
+            <Text style={styles.headShapeRec}>
+              {styleHeadShapeData[item.id].recommendation}
+            </Text>
+            <View style={styles.headShapeTags}>
+              {styleHeadShapeData[item.id].suitableHeadShapes.backHeadShape.map((v) => (
+                <View key={`bh_${v}`} style={styles.headShapeTag}>
+                  <Text style={styles.headShapeTagText}>{headShapeLabels.backHeadShape[v]}</Text>
+                </View>
+              ))}
+              {styleHeadShapeData[item.id].suitableHeadShapes.crownHeight.map((v) => (
+                <View key={`ch_${v}`} style={styles.headShapeTag}>
+                  <Text style={styles.headShapeTagText}>{headShapeLabels.crownHeight[v]}</Text>
+                </View>
+              ))}
+              {styleHeadShapeData[item.id].suitableHeadShapes.headSize.map((v) => (
+                <View key={`hs_${v}`} style={styles.headShapeTag}>
+                  <Text style={styles.headShapeTagText}>머리 {headShapeLabels.headSize[v]}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* 모질/모량 가이드 */}
+      {styleHairTypeData[item.id] && (() => {
+        const hd = styleHairTypeData[item.id];
+        return (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>💇 모질/모량 가이드</Text>
+            <View style={styles.hairTypeBox}>
+              <Text style={styles.hairTypeNote}>{hd.hairTypeNote}</Text>
+              <View style={styles.hairTypeMeta}>
+                <View style={styles.hairTypeRow}>
+                  <Text style={styles.hairTypeLabel}>베스트 모질</Text>
+                  <View style={styles.bestBadge}>
+                    <Text style={styles.bestBadgeText}>{hairTypeLabels[hd.bestHairType]}</Text>
+                  </View>
+                </View>
+                <View style={styles.hairTypeRow}>
+                  <Text style={styles.hairTypeLabel}>적합 모질</Text>
+                  <View style={styles.hairTypeTags}>
+                    {hd.suitableHairTypes.map((t) => (
+                      <View key={t} style={styles.hairTypeTag}>
+                        <Text style={styles.hairTypeTagText}>{hairTypeLabels[t]}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.hairTypeRow}>
+                  <Text style={styles.hairTypeLabel}>적합 모량</Text>
+                  <View style={styles.hairTypeTags}>
+                    {hd.suitableHairAmounts.map((a) => (
+                      <View key={a} style={styles.hairTypeTag}>
+                        <Text style={styles.hairTypeTagText}>{hairAmountLabels[a]}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+              {hd.notRecommendedFor && (
+                <View style={styles.notRecBox}>
+                  <Text style={styles.notRecText}>⚠️ {hd.notRecommendedFor.reason}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        );
+      })()}
 
       {/* 하단 버튼 */}
       <View style={styles.buttons}>
@@ -257,10 +340,18 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   imageArea: {
-    height: 280,
+    height: 480,
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  detailImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 600,
   },
   imagePlaceholder: {
     fontSize: 80,
@@ -371,6 +462,100 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textSecondary,
     lineHeight: 22,
+  },
+  hairTypeBox: {
+    backgroundColor: '#FFF7ED',
+    borderRadius: 16,
+    padding: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  hairTypeNote: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+    fontWeight: '600',
+    lineHeight: 22,
+    marginBottom: 14,
+  },
+  hairTypeMeta: {
+    gap: 10,
+  },
+  hairTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  hairTypeLabel: {
+    fontSize: 13,
+    color: Colors.textLight,
+    width: 72,
+  },
+  bestBadge: {
+    backgroundColor: '#F59E0B',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  bestBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  hairTypeTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  hairTypeTag: {
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  hairTypeTagText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#92400E',
+  },
+  notRecBox: {
+    marginTop: 12,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    padding: 12,
+  },
+  notRecText: {
+    fontSize: 13,
+    color: '#991B1B',
+    lineHeight: 20,
+  },
+  headShapeBox: {
+    backgroundColor: '#F0F9FF',
+    borderRadius: 16,
+    padding: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3B82F6',
+  },
+  headShapeRec: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+    fontWeight: '600',
+    lineHeight: 22,
+    marginBottom: 14,
+  },
+  headShapeTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  headShapeTag: {
+    backgroundColor: '#DBEAFE',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  headShapeTagText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1D4ED8',
   },
   tags: {
     flexDirection: 'row',

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
 import { Colors } from '../constants/colors';
 import { StyleData } from '../constants/mockStyles';
+import styleImages from '../constants/styleImages';
 
 type Props = {
   style: StyleData;
@@ -53,11 +54,18 @@ function StyleCardInner({ style: item, onPress, index = 0 }: Props) {
           <Text style={styles.scoreText}>{item.matchScore}% 매칭</Text>
         </View>
 
-        {/* 이미지 placeholder */}
+        {/* 이미지 영역 */}
         <View style={styles.imageArea}>
-          <Text style={styles.imagePlaceholder}>💇</Text>
-          <Text style={styles.imageLabel}>{item.category}</Text>
+          {styleImages[item.id] ? (
+            <Image source={styleImages[item.id]} style={styles.image} resizeMode="cover" />
+          ) : (
+            <Text style={styles.imagePlaceholder}>💇</Text>
+          )}
+          <View style={styles.categoryBadge}>
+            <Text style={styles.imageLabel}>{item.category}</Text>
+          </View>
         </View>
+
 
         {/* 정보 영역 */}
         <View style={styles.info}>
@@ -133,18 +141,35 @@ const styles = StyleSheet.create({
     color: Colors.accent,
   },
   imageArea: {
-    height: 200,
+    height: 400,
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  image: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 500,
   },
   imagePlaceholder: {
     fontSize: 64,
   },
+  categoryBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 16,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
   imageLabel: {
-    marginTop: 8,
-    fontSize: 14,
-    color: Colors.textLight,
+    fontSize: 13,
+    color: Colors.white,
+    fontWeight: '600',
   },
   info: {
     padding: 20,
