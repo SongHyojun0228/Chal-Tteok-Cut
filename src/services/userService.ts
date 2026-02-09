@@ -11,6 +11,7 @@ export type UserProfile = {
   stylingTime: string;
   stylePref: string;
   faceShape?: string;
+  facePhotoURL?: string;
   faceAnalysis?: FaceAnalysisResult & { analyzedAt?: any };
   savedStyles: string[];
   createdAt?: any;

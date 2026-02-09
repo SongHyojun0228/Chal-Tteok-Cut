@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -96,7 +97,11 @@ export default function ProfileScreen() {
       <View style={styles.faceCard}>
         <View style={styles.faceCardHeader}>
           <View style={styles.faceIconArea}>
-            <Text style={styles.faceIcon}>🧑</Text>
+            {profile.facePhotoURL ? (
+              <Image source={{ uri: profile.facePhotoURL }} style={styles.facePhoto} />
+            ) : (
+              <Text style={styles.faceIcon}>🧑</Text>
+            )}
           </View>
           <View style={styles.faceInfo}>
             <Text style={styles.faceLabel}>내 얼굴형</Text>
@@ -362,6 +367,11 @@ const styles = StyleSheet.create({
   },
   faceIcon: {
     fontSize: 36,
+  },
+  facePhoto: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
   },
   faceInfo: {
     flex: 1,

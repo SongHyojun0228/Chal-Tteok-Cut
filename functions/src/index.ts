@@ -153,13 +153,16 @@ function classifyFaceShape(landmarks: Array<{x: number; y: number}>): FaceAnalys
   const cheekboneProminence: "flat" | "moderate" | "prominent" =
     cheekToJawRatio < 1.15 ? "flat" : cheekToJawRatio > 1.35 ? "prominent" : "moderate";
 
-  // 턱 너비
+  // 턱 너비 (캘리브레이션: 0.72~0.86 분포, 중앙값 ~0.77)
   const jawWidthClass: "narrow" | "medium" | "wide" =
-    jawToFaceRatio < 0.6 ? "narrow" : jawToFaceRatio > 0.75 ? "wide" : "medium";
+    jawToFaceRatio < 0.74 ? "narrow" : jawToFaceRatio > 0.79 ? "wide" : "medium";
 
-  // 턱 형태 (각도 기반)
+  // 턱 형태 (각도 + 너비 복합 판단, 캘리브레이션: 각도 21~39 분포)
+  // 각진: 턱이 넓고 각도가 낮은 경우만 (넓고 평평한 턱)
+  // 뾰족: 턱이 좁고 각도가 높은 경우 (좁고 가파른 턱)
   const jawShape: "round" | "angular" | "pointed" =
-    avgJawAngle > 60 ? "pointed" : avgJawAngle > 40 ? "round" : "angular";
+    (avgJawAngle <= 30 && jawToFaceRatio >= 0.79) ? "angular" :
+    (avgJawAngle >= 36 && jawToFaceRatio <= 0.77) ? "pointed" : "round";
 
   // 하안부 길이
   const lowerFaceLength: "short" | "medium" | "long" =
@@ -269,6 +272,44 @@ function classifyFaceShape(landmarks: Array<{x: number; y: number}>): FaceAnalys
     recommendations.push("옆으로 볼륨을 주는 스타일이 얼굴 비율을 잡아줘요");
   }
 
+  // ===== 얼굴형별 종합 추천 =====
+  const shapeRecommendations: Record<FaceShape, string[]> = {
+    round: [
+      "[추천] 레이어드컷이나 사이드파트로 세로 길이감을 주면 갸름해 보여요",
+      "[추천] 볼륨이 큰 펌보다는 세로로 떨어지는 직모나 C컬이 잘 어울려요",
+      "[주의] 볼 옆으로 퍼지는 단발이나 풍성한 보브컷은 얼굴이 더 넓어 보일 수 있어요",
+      "[팁] 앞머리를 가르마로 나누면 세로 라인이 강조되어 날씬해 보여요",
+    ],
+    oval: [
+      "[추천] 균형 잡힌 얼굴형이라 대부분의 스타일이 잘 어울려요",
+      "[추천] 레이어드, 보브컷, 웨이브 등 다양한 스타일에 도전해보세요",
+      "[팁] 현재 얼굴형의 장점을 살려주는 자연스러운 스타일이 가장 예뻐요",
+    ],
+    square: [
+      "[추천] 부드러운 웨이브나 S컬로 각진 인상을 부드럽게 만들어보세요",
+      "[추천] 턱선을 감싸는 레이어드나 허쉬컷이 잘 어울려요",
+      "[주의] 일자 뱅이나 직선적인 단발은 각진 느낌을 강조할 수 있어요",
+      "[팁] 사이드에 볼륨을 주고 턱 주변에 자연스러운 곡선을 만들어보세요",
+    ],
+    oblong: [
+      "[추천] 옆으로 볼륨을 줄 수 있는 웨이브 펌이나 보브컷이 잘 어울려요",
+      "[추천] 앞머리를 만들면 얼굴 길이를 줄여주는 효과가 있어요",
+      "[주의] 긴 생머리나 볼륨 없이 납작한 스타일은 얼굴이 더 길어 보일 수 있어요",
+      "[팁] 귀 옆 높이에서 볼륨감을 주면 얼굴 비율이 안정돼 보여요",
+    ],
+    heart: [
+      "[추천] 턱 라인에 볼륨을 주는 보브컷이나 레이어드가 잘 어울려요",
+      "[추천] 사이드뱅이나 커튼뱅으로 넓은 이마를 자연스럽게 커버해보세요",
+      "[주의] 정수리에만 볼륨이 큰 스타일은 이마가 더 넓어 보일 수 있어요",
+      "[팁] 턱 아래로 볼륨을 더하면 전체적인 균형감이 좋아져요",
+    ],
+  };
+
+  const shapeTips = shapeRecommendations[faceShape];
+  if (shapeTips) {
+    recommendations.push(...shapeTips);
+  }
+
   return {
     faceShape,
     confidence,
@@ -316,6 +357,13 @@ export const analyzeFace = onCall({ cors: true }, async (request) => {
       throw new HttpsError("not-found", "사진을 찾을 수 없습니다.");
     }
 
+    // Firebase Storage 다운로드 URL 생성 (클라이언트 SDK가 업로드 시 생성한 토큰 사용)
+    const [metadata] = await file.getMetadata();
+    const token = metadata.metadata?.firebaseStorageDownloadTokens || "";
+    const downloadURL = token
+      ? `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(storagePath)}?alt=media&token=${token}`
+      : "";
+
     const gcsUri = `gs://${bucket.name}/${storagePath}`;
     const [result] = await visionClient.faceDetection(gcsUri);
     const faces = result.faceAnnotations;
@@ -342,6 +390,7 @@ export const analyzeFace = onCall({ cors: true }, async (request) => {
     await admin.firestore().doc(`users/${userId}`).set(
       {
         faceShape: analysis.faceShape,
+        facePhotoURL: downloadURL,
         faceAnalysis: {
           ...analysis,
           analyzedAt: admin.firestore.FieldValue.serverTimestamp(),

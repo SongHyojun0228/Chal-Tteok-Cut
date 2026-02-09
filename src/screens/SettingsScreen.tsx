@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Linking,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
@@ -65,7 +66,7 @@ export default function SettingsScreen() {
       '사진과 질문을 다시 진행하시겠어요?\n기존 분석 결과는 히스토리에 저장됩니다.',
       [
         { text: '취소', style: 'cancel' },
-        { text: '재분석하기', style: 'default' },
+        { text: '재분석하기', onPress: () => navigation.navigate('ProfileFlow') },
       ]
     );
   };
@@ -170,14 +171,14 @@ export default function SettingsScreen() {
           <SettingItem
             emoji="❓"
             title="자주 묻는 질문"
-            onPress={() => Alert.alert('FAQ', '준비 중이에요!')}
+            onPress={() => navigation.navigate('FAQ')}
           />
           <View style={styles.divider} />
           <SettingItem
             emoji="💬"
             title="문의하기"
-            subtitle="이메일로 문의해주세요"
-            onPress={() => Alert.alert('문의', 'support@chaltteok.com')}
+            subtitle={`이메일: thdgywns2300@gmail.com\n카카오톡: hyojun2300`}
+            onPress={() => Linking.openURL('mailto:thdgywns2300@gmail.com')}
           />
           <View style={styles.divider} />
           <SettingItem
