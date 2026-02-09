@@ -9,6 +9,7 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   Animated,
+  Platform,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '../constants/colors';
@@ -20,7 +21,15 @@ type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 };
 
-const slides = [
+type Slide = {
+  id: string;
+  emoji: string;
+  title: string;
+  description: string;
+  steps?: string[];
+};
+
+const baseSlides: Slide[] = [
   {
     id: '1',
     emoji: '✂️',
@@ -40,6 +49,31 @@ const slides = [
     description: '추천받은 스타일을 미용사와 공유하면\n상담 시간도 줄이고 만족도는 UP!',
   },
 ];
+
+const isIOS = /iPad|iPhone|iPod/.test(navigator?.userAgent || '');
+
+const pwaSlide: Slide = {
+  id: 'pwa',
+  emoji: '📲',
+  title: '앱으로 설치하면\n더 편해요',
+  description: '홈 화면에 추가하면 앱처럼 바로 실행할 수 있어요',
+  steps: isIOS
+    ? [
+        '1. 하단 공유 버튼 (□↑) 탭',
+        '2. "홈 화면에 추가" 선택',
+        '3. "추가" 탭하면 완료!',
+      ]
+    : [
+        '1. 우측 상단 메뉴 (⋮) 탭',
+        '2. "홈 화면에 추가" 선택',
+        '3. "추가" 탭하면 완료!',
+      ],
+};
+
+// 웹에서만 PWA 설치 안내 슬라이드 추가
+const slides = Platform.OS === 'web'
+  ? [...baseSlides, pwaSlide]
+  : baseSlides;
 
 export default function OnboardingScreen({ navigation }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -85,6 +119,16 @@ export default function OnboardingScreen({ navigation }: Props) {
             <Text style={styles.emoji}>{item.emoji}</Text>
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.description}>{item.description}</Text>
+            {item.steps && (
+              <View style={styles.stepsBox}>
+                {item.steps.map((step: string, i: number) => (
+                  <Text key={i} style={styles.stepText}>{step}</Text>
+                ))}
+                {isIOS && (
+                  <Text style={styles.stepNote}>* Safari에서만 가능해요</Text>
+                )}
+              </View>
+            )}
           </View>
         )}
       />
@@ -161,6 +205,26 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 26,
+  },
+  stepsBox: {
+    marginTop: 28,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  stepText: {
+    fontSize: 16,
+    color: Colors.textPrimary,
+    fontWeight: '600',
+    lineHeight: 32,
+  },
+  stepNote: {
+    fontSize: 13,
+    color: Colors.textLight,
+    marginTop: 8,
   },
   footer: {
     paddingHorizontal: 24,
