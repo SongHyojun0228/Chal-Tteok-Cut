@@ -7,6 +7,7 @@ export type RootStackParamList = {
   StyleDetail: { styleId: string };
   Legal: { type: 'privacy' | 'terms' };
   FAQ: undefined;
+  AllStyles: undefined;
 };
 
 export type ProfileFlowParamList = {

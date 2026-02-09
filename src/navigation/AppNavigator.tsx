@@ -21,6 +21,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import StyleDetailScreen from '../screens/StyleDetailScreen';
 import LegalScreen from '../screens/LegalScreen';
 import FAQScreen from '../screens/FAQScreen';
+import AllStylesScreen from '../screens/AllStylesScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileFlowParamList>();
@@ -145,6 +146,11 @@ export default function AppNavigator() {
               component={FAQScreen}
               options={{ presentation: 'modal' }}
             />
+            <Stack.Screen
+              name="AllStyles"
+              component={AllStylesScreen}
+              options={{ presentation: 'modal' }}
+            />
           </>
         ) : (
           // 로그인 + 프로필 없음 → 온보딩부터
@@ -170,6 +176,11 @@ export default function AppNavigator() {
             <Stack.Screen
               name="FAQ"
               component={FAQScreen}
+              options={{ presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="AllStyles"
+              component={AllStylesScreen}
               options={{ presentation: 'modal' }}
             />
           </>

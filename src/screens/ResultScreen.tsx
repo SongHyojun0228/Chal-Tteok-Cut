@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -83,6 +84,12 @@ export default function ResultScreen() {
             AI가 분석한 Top {filteredStyles.length} 스타일이에요
           </Text>
         )}
+        <TouchableOpacity
+          style={styles.allStylesButton}
+          onPress={() => navigation.navigate('AllStyles')}
+        >
+          <Text style={styles.allStylesText}>전체 스타일 보기 →</Text>
+        </TouchableOpacity>
       </View>
 
       {/* 스타일 카드 리스트 */}
@@ -154,6 +161,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 4,
+  },
+  allStylesButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.white,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  allStylesText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
   },
   list: {
     flex: 1,
